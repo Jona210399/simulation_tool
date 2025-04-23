@@ -10,3 +10,5 @@ wheels/
 .venv
 .env
 /simulation_runs
+
+.vscode
