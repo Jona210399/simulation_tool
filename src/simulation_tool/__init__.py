@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from simulation-tool!")
+from simulation_tool.exceptions import SimulationError

@@ -23,13 +23,27 @@ class UVVisData:
     ) -> "UVVisData":
         uvvis_data = np.loadtxt(uvvis_file)
         rt_data = np.loadtxt(rt_file)
-        wavelengths = uvvis_data[:, 0] * M_TO_NM
+        wavelengths = uvvis_data[:, 0]
         absorption = uvvis_data[:, 1]
         reflection = rt_data[:, 1]
         absorption = 1.0 - np.exp(-absorption)
         transmission = 1.0 - reflection - absorption
 
         return cls(wavelengths, absorption, reflection, transmission)
+
+    def plot(
+        self,
+        dpi: int,
+        save_path: Path = Path("."),
+    ):
+        plot_uvvis(
+            self.wavelengths * M_TO_NM,
+            self.absorption,
+            self.reflection,
+            self.transmission,
+            dpi,
+            save_path,
+        )
 
 
 def plot_uvvis(

@@ -19,9 +19,21 @@ class EQEData:
             file_path,
             separator=" ",
         )
-        wavelengths = data["lambda"].to_numpy() * M_TO_NM
+        wavelengths = data["lambda"].to_numpy()
         eqe = data["EQE"].to_numpy()
         return cls(wavelengths, eqe)
+
+    def plot(
+        self,
+        dpi: int,
+        save_path: Path = Path("."),
+    ):
+        plot_EQE(
+            self.eqe,
+            self.wavelengths * M_TO_NM,
+            dpi,
+            save_path,
+        )
 
 
 def plot_EQE(

@@ -42,6 +42,21 @@ class JVData:
             ff,
         )
 
+    def plot(
+        self,
+        dpi: int,
+        save_path: Path = Path("."),
+    ):
+        plot_jV(
+            self.v_ext,
+            self.j_ext,
+            self.voc,
+            self.jsc,
+            self.ff,
+            dpi,
+            save_path,
+        )
+
 
 def plot_jV(
     v_ext: Array1D,

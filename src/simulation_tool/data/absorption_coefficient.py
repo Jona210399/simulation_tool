@@ -16,9 +16,21 @@ class AbsorptionCoefficientData:
     @classmethod
     def from_file(cls, file_path: str) -> "AbsorptionCoefficientData":
         data = np.loadtxt(file_path)
-        x = data[:, 0] * M_TO_NM
-        absorption_coefficient = data[:, 1] * NM_TO_M
+        x = data[:, 0]
+        absorption_coefficient = data[:, 1]
         return cls(absorption_coefficient, x)
+
+    def plot(
+        self,
+        dpi: int,
+        save_path: Path = Path("."),
+    ):
+        plot_absorption_coefficient(
+            self.x * M_TO_NM,
+            self.alpha * NM_TO_M,
+            dpi,
+            save_path,
+        )
 
 
 def plot_absorption_coefficient(

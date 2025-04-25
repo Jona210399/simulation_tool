@@ -1,6 +1,6 @@
 import numpy as np
 
-from simulation_tool.templates.simss import get_simss_config
+from simulation_tool.templates.simss import SimssConfig
 from simulation_tool.typing_ import PathLike
 from simulation_tool.utils import loguniform
 
@@ -59,7 +59,7 @@ def sample_random_parameters(
     settings["Vstep"] = 0.025  # default 0.025
 
     # get the missing default parameters and add them here
-    simss_config = get_simss_config(session_path, path_to_simss)
+    simss_config = SimssConfig.from_session(session_path, path_to_simss).to_dict()
     for key in simss_config.keys():
         if key not in settings.keys():
             settings[key] = simss_config[key]

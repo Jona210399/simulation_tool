@@ -32,6 +32,9 @@ class BandDiagramData:
         E_vs = [settings[f"l{index + 1}.E_v"] for index in range(num_layers)]
         return cls(W_L, W_R, L_TCO, L_BE, Ls, E_cs, E_vs)
 
+    def plot(self, dpi: int, save_path: Path = Path(".")):
+        plot_band_diagram(self, dpi, save_path)
+
 
 def plot_band_diagram(
     data: BandDiagramData,

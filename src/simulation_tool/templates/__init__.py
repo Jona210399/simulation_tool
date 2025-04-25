@@ -1,4 +1,2 @@
-from simulation_tool.templates.layer1 import get_layer1_config
-from simulation_tool.templates.layer2 import get_layer2_config
-from simulation_tool.templates.layer3 import get_layer3_config
-from simulation_tool.templates.simss import get_simss_config
+from simulation_tool.templates.layer import Layer
+from simulation_tool.templates.simss import SimssConfig
