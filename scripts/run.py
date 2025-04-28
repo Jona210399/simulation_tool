@@ -21,9 +21,9 @@ from simulation_tool.jV import (
 from simulation_tool.session import clean_session, delete_session, set_up_session
 from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.randomization import (
-    get_random_layer1,
-    get_random_layer2,
-    get_random_layer3,
+    randomize_layer1,
+    randomize_layer2,
+    randomize_layer3,
     randomize_simss_config,
 )
 from simulation_tool.templates.simss import SimssConfig
@@ -42,28 +42,13 @@ def create_layer_stack(
     session_path: Path,
     path_to_simss: Path,
     bandgap: float,
-    randomized: bool,
 ) -> list[Layer]:
-    if not randomized:
-        layer1 = Layer.get_default_layer1(path_to_simss)
-        layer2 = Layer.get_default_layer2(session_path, bandgap)
-        layer3 = Layer.get_default_layer3(path_to_simss)
-    else:
-        layer2 = get_random_layer2(
-            session_path=session_path,
-            bandgap=bandgap,
-        )
-        layer1 = get_random_layer1(
-            path_to_simss=path_to_simss,
-            layer2_E_c=layer2.E_c,
-            layer2_E_v=layer2.E_v,
-        )
-
-        layer3 = get_random_layer3(
-            path_to_simss=path_to_simss,
-            layer2_E_c=layer2.E_c,
-            layer2_E_v=layer2.E_v,
-        )
+    layer1 = Layer.get_default_layer1(path_to_simss=path_to_simss)
+    layer2 = Layer.get_default_layer2(
+        session_path=session_path,
+        bandgap=bandgap,
+    )
+    layer3 = Layer.get_default_layer3(path_to_simss=path_to_simss)
 
     return [layer1, layer2, layer3]
 
@@ -109,12 +94,22 @@ def prepare_simulation(
         session_path=session_path,
         path_to_simss=path_to_simss,
         bandgap=optical_data.bandgap,
-        randomized=randomized,
     )
 
-    layer1, _, layer3 = layers
+    layer1, layer2, layer3 = layers
 
     if randomized:
+        layer2 = randomize_layer2(layer=layer2, bandgap=optical_data.bandgap)
+        layer1 = randomize_layer1(
+            layer=layer1,
+            layer2_E_c=layer2.E_c,
+            layer2_E_v=layer2.E_v,
+        )
+        layer3 = randomize_layer3(
+            layer=layer3,
+            layer2_E_c=layer2.E_c,
+            layer2_E_v=layer2.E_v,
+        )
         simss_config = randomize_simss_config(
             simss_config=simss_config,
             layer1_E_c=layer1.E_c,
@@ -149,7 +144,7 @@ def run_simulations(
     )
     if isinstance(simulation_result, SimulationError):
         delete_session(session_path)
-        return f"ERROR: {simulation_result}"
+        return f"ERROR {simulation_result}"
 
     create_jV_simulation_plots(
         session_path=session_path,
@@ -167,7 +162,7 @@ def run_simulations(
 
     if isinstance(simulation_result, SimulationError):
         delete_session(session_path)
-        return f"ERROR: {simulation_result}"
+        return f"ERROR {simulation_result}"
 
     create_EQE_simulation_plots(session_path=session_path, dpi=DPI)
     preserve_EQE_simulation_output(session_path=session_path)
@@ -192,6 +187,7 @@ def run(
         path_to_simss=PATH_TO_SIMSS,
         randomized=randomized,
     )
+
     eqe_parameters = EQEParameters(
         spectrum=smiss_config.optics.spectrum,
         lambda_min=smiss_config.optics.lambda_min * M_TO_NM,
@@ -210,6 +206,7 @@ def run(
         session_path=session_path,
         varFile=smiss_config.ui.varFile,
     )
+
     return result
 
 

@@ -2,17 +2,14 @@ import numpy as np
 
 from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig
-from simulation_tool.typing_ import PathLike
 from simulation_tool.utils import loguniform, randn, uniform
 
 
-def get_random_layer1(
-    path_to_simss: PathLike,
+def randomize_layer1(
+    layer: Layer,
     layer2_E_c: float,
     layer2_E_v: float,
 ) -> Layer:
-    layer = Layer.get_default_layer1(path_to_simss)
-
     layer.L = loguniform(low=3e-9, high=3e-7)
     layer_factor = (np.log(layer.L) - np.log(3e-9)) / (np.log(3e-7) - np.log(3e-9))
 
@@ -39,12 +36,10 @@ def get_random_layer1(
     return layer
 
 
-def get_random_layer2(
-    session_path: PathLike,
+def randomize_layer2(
+    layer: Layer,
     bandgap: float,
 ):
-    layer = Layer.get_default_layer2(session_path, bandgap)
-
     layer.L = loguniform(low=5e-9, high=7.5e-7)
     layer_factor = (np.log(layer.L) - np.log(5e-9)) / (np.log(7.5e-7) - np.log(5e-9))
     layer.eps_r = randn() * 1.0 + 4.0
@@ -77,12 +72,11 @@ def get_random_layer2(
     return layer
 
 
-def get_random_layer3(
-    path_to_simss: PathLike,
+def randomize_layer3(
+    layer: Layer,
     layer2_E_c: float,
     layer2_E_v: float,
 ):
-    layer = Layer.get_default_layer3(path_to_simss)
     layer.L = loguniform(low=3e-9, high=3e-7)
     layer_factor = (np.log(layer.L) - np.log(3e-9)) / (np.log(3e-7) - np.log(3e-9))
 
