@@ -1,16 +1,16 @@
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 
-from simulation_tool.typing_ import PathLike, SettingsDict
+from simulation_tool.typing_ import PathLike
 
 
 @dataclass
-class Layers:
+class LayerFiles:
     l1: str
     l2: str
     l3: str
 
     @classmethod
-    def from_session_path(cls, session_path: PathLike) -> "Layers":
+    def from_session_path(cls, session_path: PathLike) -> "LayerFiles":
         return cls(
             f"{session_path}/L1_parameters.txt",
             f"{session_path}/L2_parameters.txt",
@@ -176,7 +176,8 @@ class UserInterface:
 @dataclass
 class SimssConfig:
     T: float
-    layers: Layers
+    setup_file: str
+    layers: LayerFiles
     contacts: Contacts
     optics: Optics
     numerical: Numerical
@@ -191,22 +192,11 @@ class SimssConfig:
     ) -> "SimssConfig":
         return cls(
             T=295.0,
-            layers=Layers.from_session_path(session_path),
+            setup_file=f"{session_path}/simulation_setup.txt",
+            layers=LayerFiles.from_session_path(session_path),
             contacts=Contacts.get_default(),
             optics=Optics.get_default(path_to_simss),
             numerical=Numerical.get_default(),
             voltage=VoltageRange.get_default(),
             ui=UserInterface.get_default(),
         )
-
-    def to_dict(self) -> SettingsDict:
-        dict_ = {
-            "T": self.T,
-            **asdict(self.layers),
-            **asdict(self.contacts),
-            **asdict(self.optics),
-            **asdict(self.numerical),
-            **asdict(self.voltage),
-            **asdict(self.ui),
-        }
-        return dict_

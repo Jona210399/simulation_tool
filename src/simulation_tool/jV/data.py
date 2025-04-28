@@ -81,6 +81,6 @@ def plot_jV(
     plt.plot([0, 0], [-1000.0, 1000.0], "k--")
     plt.legend(loc="upper left")
     plt.xlabel("Voltage [V]")
-    plt.ylabel("Current density [A/m^2]")
+    plt.ylabel("Current density [A/$m^{2}$]")
     plt.savefig(f"{save_path}/jV.png", dpi=dpi)
     plt.close()

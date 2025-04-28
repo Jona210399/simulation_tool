@@ -36,3 +36,11 @@ def wavelength_to_energy(wavelength: float) -> float:
 
 def loguniform(low=0, high=1, size=None):
     return np.exp(np.random.uniform(np.log(low), np.log(high), size))
+
+
+def uniform(low=0, high=1):
+    return np.random.uniform(low, high)
+
+
+def randn():
+    return np.random.randn()

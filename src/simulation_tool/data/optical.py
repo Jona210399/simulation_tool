@@ -14,8 +14,8 @@ from simulation_tool.utils import (
     wavelength_to_energy,
 )
 
-MIN_WAVELENGTH = 300 * NANO  # UNIT: m
-MAX_WAVELENGTH = 800 * NANO  # UNIT: m
+MIN_WAVELENGTH = 350 * NANO  # 300 * NANO  # UNIT: m
+MAX_WAVELENGTH = 900 * NANO  # 800 * NANO  # UNIT: m
 WAVE_LENGTH_STEP = NANO  # UNIT: m
 
 
@@ -41,8 +41,17 @@ class OpticalData:
         )
 
     @classmethod
-    def new(cls) -> "OpticalData":
-        wavelengths = generate_wavelengths()
+    def new(
+        cls,
+        min_wavelenght: float,
+        max_wavelenght: float,
+        wavelenght_step: float,
+    ) -> "OpticalData":
+        wavelengths = generate_wavelengths(
+            min_wavelength=min_wavelenght,
+            max_wavelength=max_wavelenght,
+            wavelength_step=wavelenght_step,
+        )
         n = generate_n(wavelengths)
         k, bandgap = generate_k(wavelengths)
         return cls(
@@ -122,14 +131,18 @@ def generate_k(wavelengths: Array1D) -> tuple[Array1D, float]:
     return k, bandgap
 
 
-def generate_wavelengths():
+def generate_wavelengths(
+    min_wavelength: float,
+    max_wavelength: float,
+    wavelength_step: float,
+) -> Array1D:
     """
     Returns a 1D array of wavelengths from MIN_WAVELENGTH to MAX_WAVELENGTH.
     Unit: m
     """
     wavelengths = np.linspace(
-        MIN_WAVELENGTH,
-        MAX_WAVELENGTH,
-        get_num_points_for_linspace(MIN_WAVELENGTH, MAX_WAVELENGTH, WAVE_LENGTH_STEP),
+        min_wavelength,
+        max_wavelength,
+        get_num_points_for_linspace(min_wavelength, max_wavelength, wavelength_step),
     )
     return wavelengths

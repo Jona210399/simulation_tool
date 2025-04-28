@@ -3,8 +3,10 @@ from pathlib import Path
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
+import numpy as np
 
 from simulation_tool.constants import M_TO_NM
+from simulation_tool.templates.layer import Layer
 
 
 @dataclass
@@ -18,134 +20,106 @@ class BandDiagramData:
     E_vs: list[float]
 
     @classmethod
-    def from_settings(
+    def from_layers(
         cls,
-        settings: dict[str, str | int | float],
-        num_layers: int = 3,
-    ) -> "BandDiagramData":
-        W_L = settings["W_L"]
-        W_R = settings["W_R"]
-        L_TCO = settings["L_TCO"] * M_TO_NM
-        L_BE = settings["L_BE"] * M_TO_NM
-        Ls = [settings[f"l{index + 1}.L"] * M_TO_NM for index in range(num_layers)]
-        E_cs = [settings[f"l{index + 1}.E_c"] for index in range(num_layers)]
-        E_vs = [settings[f"l{index + 1}.E_v"] for index in range(num_layers)]
+        W_L: float,
+        W_R: float,
+        L_TCO: float,
+        L_BE: float,
+        layers: list[Layer],
+    ):
+        Ls = [layer.L for layer in layers]
+        E_cs = [layer.E_c for layer in layers]
+        E_vs = [layer.E_v for layer in layers]
         return cls(W_L, W_R, L_TCO, L_BE, Ls, E_cs, E_vs)
 
-    def plot(self, dpi: int, save_path: Path = Path(".")):
-        plot_band_diagram(self, dpi, save_path)
+    def plot(self, dpi: int, adjust_y_axis: bool, save_path: Path = Path(".")):
+        plot_band_diagram(
+            self,
+            dpi=dpi,
+            adjust_y_axis=adjust_y_axis,
+            save_path=save_path,
+        )
 
 
 def plot_band_diagram(
     data: BandDiagramData,
     dpi: int,
+    adjust_y_axis: bool,
     save_path: Path = Path("."),
 ):
-    fig, ax = plt.subplots(figsize=(10, 6))
-    # layer 0
+    _, ax = plt.subplots(figsize=(10, 6))
 
-    L_TCO = data.L_TCO
-    L_BE = data.L_BE
-    W_L = data.W_L
-    W_R = data.W_R
-    Ls = data.Ls
-    E_cs = data.E_cs
-    E_vs = data.E_vs
+    widths = np.array([data.L_TCO] + data.Ls + [data.L_BE]) * M_TO_NM
+    E_cs = [data.W_L] + data.E_cs + [data.W_R]
+    E_vs = [None] + data.E_vs + [None]
+    names = [None] + [f"Layer {i + 1}" for i in range(len(data.Ls))] + [None]
+    colors = ["C0"] + [f"C{i + 1}" for i in range(len(data.Ls))] + ["C0"]
 
     x_position = 0.0
-    width = L_TCO
-    height = W_L
-    color = "C0"
-    rect = patches.Rectangle(
-        (x_position, 0),
-        width,
-        height,
-        linewidth=1,
-        edgecolor="black",
-        facecolor=color,
-        alpha=0.3,
-    )
-    ax.add_patch(rect)
-    ax.plot(
-        [x_position, x_position + L_TCO], [height, height], color=color, linestyle="--"
-    )
-    x_position += L_TCO
-    # layers 1, 2, and 3
-    for i in range(3):
-        L = Ls[i]
-        E_c = E_cs[i]
-        E_v = E_vs[i]
-        name = f"Layer {i + 1}"
-        width = L
-        height1 = E_c
-        height2 = 10.0 - E_v
-        color = f"C{i + 1}"
-        # Create a rectangle representing the band gap of the layer.
-        rect1 = patches.Rectangle(
+
+    for width, E_c, E_v, name, color in zip(
+        widths,
+        E_cs,
+        E_vs,
+        names,
+        colors,
+    ):
+        conduction_band = patches.Rectangle(
             (x_position, 0),
             width,
-            height1,
+            E_c,
             linewidth=1,
             edgecolor="black",
             facecolor=color,
             alpha=0.3,
         )
-        rect2 = patches.Rectangle(
+
+        ax.add_patch(conduction_band)
+        ax.plot(
+            [x_position, x_position + width], [E_c, E_c], color=color, linestyle="--"
+        )
+
+        if E_v is None:
+            x_position += width
+            continue
+
+        valence_band = patches.Rectangle(
             (x_position, E_v),
             width,
-            height2,
+            50.0 - E_v,
             linewidth=1,
             edgecolor="black",
             facecolor=color,
             alpha=0.3,
         )
-        ax.add_patch(rect1)
-        ax.add_patch(rect2)
-        # Plot dashed lines for the conduction and valence band edges.
-        ax.plot([x_position, x_position + L], [E_c, E_c], color=color, linestyle="--")
-        ax.plot([x_position, x_position + L], [E_v, E_v], color=color, linestyle="--")
-        # Annotate the layer name in the middle of the box.
+        ax.add_patch(valence_band)
+        ax.plot(
+            [x_position, x_position + width],
+            [E_v, E_v],
+            color=color,
+            linestyle="--",
+        )
+
         ax.text(
             x_position + width / 2,
-            E_c + height / 2,
+            E_c + (E_v - E_c) / 2,
             name,
             ha="center",
             va="center",
-            fontsize=12,
-            fontweight="bold",
+            fontsize=10,
+            rotation=90,
         )
-        # Update the x-position for the next layer.
-        x_position += L
-    # layer 4
-    width = L_BE
-    height = W_R
-    color = "C0"
-    rect = patches.Rectangle(
-        (x_position, 0),
-        width,
-        height,
-        linewidth=1,
-        edgecolor="black",
-        facecolor=color,
-        alpha=0.3,
-    )
-    ax.add_patch(rect)
-    ax.plot(
-        [x_position, x_position + L_BE], [height, height], color=color, linestyle="--"
-    )
-    x_position += L_BE
-    total_thickness = x_position
+        x_position += width
 
-    # Set plot labels and title.
-    ax.set_xlabel("Distance [nm]")
-    ax.set_ylabel("Energy [eV]")
-    ax.set_title("Solar Cell Band Diagram")
-    ax.set_xlim(-0.1 * total_thickness, total_thickness + 0.1 * total_thickness)
-    # Determine the overall energy range from all layers and contacts.
-    # energy_min = min(min(E_cs), W_L, W_R) - 0.5
-    # energy_max = max(max(E_vs), W_L, W_R) + 0.5
-    ax.set_ylim(1.0, 7.0)
+    y_min = min(E_cs) - 0.5 if adjust_y_axis else 1.0
+    y_max = max(data.E_vs) + 0.5 if adjust_y_axis else 7.0
 
+    plt.xlabel("Distance [nm]")
+    plt.ylabel("Energy [eV]")
+    plt.title("Solar Cell Band Diagram")
+    plt.xlim(-0.1 * x_position, x_position + 0.1 * x_position)
+    plt.ylim(y_min, y_max)
     plt.tight_layout()
     plt.savefig(f"{save_path}/band_diagram.png", dpi=dpi)
     plt.close()

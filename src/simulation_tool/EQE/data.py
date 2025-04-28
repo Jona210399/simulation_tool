@@ -47,6 +47,6 @@ def plot_EQE(
     plt.xlabel("Wavelength [nm]")
     plt.ylabel("EQE")
     plt.xlabel("Wavelength [nm]")
-    plt.ylabel("EQE [%%]")
+    plt.ylabel("EQE [%]")
     plt.savefig(f"{save_path}/EQE.png", dpi=dpi)
     plt.close()

@@ -43,12 +43,20 @@ def delete_session(session_path: Path):
         shutil.rmtree(session_path)
 
 
-def clean_session(session_path: Path):
+def clean_session(
+    session_path: Path,
+    varFile: str,
+):
     if not session_path.exists():
         return
 
     collect_session_plots(session_path)
     collect_session_data(session_path)
-    os.remove(session_path / "Var.dat")
+
+    if (session_path / "simss").exists():
+        os.remove(session_path / "simss")
+
+    if (session_path / varFile).exists():
+        os.remove(session_path / varFile)
+
     sim.delete_folders("tmp", session_path)
-    os.remove(session_path / "simss")

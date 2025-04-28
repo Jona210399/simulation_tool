@@ -33,7 +33,10 @@ def create_jV_simulation_plots(
     JVData.from_files(
         device_characteristics_file=session_path / "scPars.txt",
         jv_file=session_path / "JV.dat",
-    ).plot(save_path=session_path, dpi=dpi)
+    ).plot(
+        save_path=session_path,
+        dpi=dpi,
+    )
 
     UVVisData.from_files(
         f"{session_path}/AbsorptionSpectrum.txt",
