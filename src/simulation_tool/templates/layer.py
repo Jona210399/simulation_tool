@@ -1,6 +1,7 @@
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 
-from simulation_tool.typing_ import PathLike, SettingsDict
+from simulation_tool.templates.serializeable import JSONSerializable
+from simulation_tool.typing_ import PathLike
 
 
 @dataclass
@@ -121,7 +122,7 @@ class BulkTrapping:
 
 
 @dataclass
-class Layer:
+class Layer(JSONSerializable):
     L: float
     eps_r: float
     E_c: float
@@ -151,30 +152,6 @@ class Layer:
             generation=Generation.get_default(),
             bulk=BulkTrapping.get_default(),
         )
-
-    def to_flat_dict(self) -> SettingsDict:
-        dict_ = {
-            "L": self.L,
-            "eps_r": self.eps_r,
-            "E_c": self.E_c,
-            "E_v": self.E_v,
-            "N_c": self.N_c,
-            "N_D": self.N_D,
-            "N_A": self.N_A,
-            **asdict(self.mobilities),
-            **asdict(self.interface),
-            **asdict(self.ions),
-            **asdict(self.generation),
-            **asdict(self.bulk),
-        }
-        return dict_
-
-    def to_dict(self, prefix: str | None = None) -> SettingsDict:
-        if not prefix:
-            return self.to_flat_dict()
-
-        dict_ = {f"{prefix}.{key}": value for key, value in self.to_flat_dict().items()}
-        return dict_
 
     @classmethod
     def get_default_layer1(cls, path_to_simss: PathLike) -> "Layer":

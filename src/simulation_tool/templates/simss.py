@@ -1,20 +1,22 @@
 from dataclasses import dataclass
+from pathlib import Path
 
+from simulation_tool.templates.serializeable import JSONSerializable
 from simulation_tool.typing_ import PathLike
 
 
 @dataclass
 class LayerFiles:
-    l1: str
-    l2: str
-    l3: str
+    l1: Path
+    l2: Path
+    l3: Path
 
     @classmethod
-    def from_session_path(cls, session_path: PathLike) -> "LayerFiles":
+    def from_session_path(cls, session_path: Path) -> "LayerFiles":
         return cls(
-            f"{session_path}/L1_parameters.txt",
-            f"{session_path}/L2_parameters.txt",
-            f"{session_path}/L3_parameters.txt",
+            session_path / "L1_parameters",
+            session_path / "L2_parameters",
+            session_path / "L3_parameters",
         )
 
 
@@ -174,9 +176,9 @@ class UserInterface:
 
 
 @dataclass
-class SimssConfig:
+class SimssConfig(JSONSerializable):
     T: float
-    setup_file: str
+    setup_file: Path
     layers: LayerFiles
     contacts: Contacts
     optics: Optics
@@ -187,12 +189,12 @@ class SimssConfig:
     @classmethod
     def from_session(
         cls,
-        session_path: PathLike,
-        path_to_simss: PathLike,
+        session_path: Path,
+        path_to_simss: Path,
     ) -> "SimssConfig":
         return cls(
             T=295.0,
-            setup_file=f"{session_path}/simulation_setup.txt",
+            setup_file=session_path / "simulation_setup",
             layers=LayerFiles.from_session_path(session_path),
             contacts=Contacts.get_default(),
             optics=Optics.get_default(path_to_simss),
@@ -200,3 +202,9 @@ class SimssConfig:
             voltage=VoltageRange.get_default(),
             ui=UserInterface.get_default(),
         )
+
+
+sims = SimssConfig.from_session(
+    session_path=Path("/path/to/session"),
+    path_to_simss=Path("/path/to/simss"),
+)

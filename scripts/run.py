@@ -57,18 +57,22 @@ def write_simulation_input_files(
     simss_config: SimssConfig,
     layers: list[Layer],
 ):
-    layer1, layer2, layer3 = layers
     with open(simss_config.setup_file, "w") as outfile:
         outfile.write(to_text.simms_config_to_text(simss_config=simss_config))
 
-    with open(simss_config.layers.l1, "w") as outfile:
-        outfile.write(to_text.layer_to_text(layer=layer1))
+    simss_config.to_json_file(simss_config.setup_file.with_suffix(".json"))
 
-    with open(simss_config.layers.l2, "w") as outfile:
-        outfile.write(to_text.layer_to_text(layer=layer2))
+    layer_files = [
+        simss_config.layers.l1,
+        simss_config.layers.l2,
+        simss_config.layers.l3,
+    ]
 
-    with open(simss_config.layers.l3, "w") as outfile:
-        outfile.write(to_text.layer_to_text(layer=layer3))
+    for layer_file, layer in zip(layer_files, layers):
+        with open(layer_file, "w") as outfile:
+            outfile.write(to_text.layer_to_text(layer=layer))
+
+        layer.to_json_file(layer_file.with_suffix(".json"))
 
 
 def prepare_simulation(
@@ -204,7 +208,7 @@ def run(
 
     clean_session(
         session_path=session_path,
-        varFile=smiss_config.ui.varFile,
+        simss_config=smiss_config,
     )
 
     return result
@@ -232,7 +236,7 @@ def run_parallel(
 
 def main():
     simulation_dir = Path.cwd() / "simulation_runs"
-    run_parallel(simulation_dir, num_workers=2, num_todo=4, randomized=True)
+    run_parallel(simulation_dir, num_workers=1, num_todo=1, randomized=False)
 
 
 if __name__ == "__main__":
