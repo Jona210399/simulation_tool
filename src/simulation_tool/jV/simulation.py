@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path
 
-from pySIMsalabim.experiments.JV_steady_state import run_SS_JV
+from pySIMsalabim.utils.general import run_simulation
 
 from simulation_tool.data import AbsorptionCoefficientData, ElectricFieldData, UVVisData
 from simulation_tool.exceptions import SimulationError
@@ -13,10 +13,11 @@ def run_jV_simulation(
     session_path: Path,
     simss_device_parameters: Path,
 ) -> None | SimulationError:
-    result, message = run_SS_JV(
-        str(simss_device_parameters),
-        session_path,
-        G_fracs=None,
+    result, message = run_simulation(
+        sim_type="simss",
+        cmd_pars=[{"par": "dev_par_file", "val": str(simss_device_parameters)}],
+        session_path=str(session_path),
+        run_mode=True,
     )
 
     if result.returncode != 0:
@@ -32,7 +33,7 @@ def run_jV_simulation(
         "E_of_x.txt",
         "alpha_of_x.txt",
         "JV.dat",
-        "scPars.txt",
+        "scPars.dat",
     ]
     for file in files_to_check:
         if not (session_path / file).exists():
@@ -70,7 +71,7 @@ def create_jV_simulation_plots(
 
     save_figure(
         JVData.from_files(
-            device_characteristics_file=session_path / "scPars.txt",
+            device_characteristics_file=session_path / "scPars.dat",
             jv_file=session_path / "JV.dat",
         ),
         save_path=session_path / "jV.png",
@@ -82,7 +83,7 @@ def preserve_jV_simulation_output(
     session_path: Path,
 ):
     shutil.move(
-        session_path / "scPars.txt",
+        session_path / "scPars.dat",
         session_path / "device_characteristics.txt",
     )
     shutil.move(
