@@ -1,8 +1,15 @@
+from pathlib import Path
+from typing import Protocol, TypeVar
+
+import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 from numpy.typing import NDArray
 from scipy.constants import c, e, h
 
 from simulation_tool.typing_ import Array1D
+
+T = TypeVar("T")
 
 
 def gaussian(x: NDArray, mean: NDArray, sigma: NDArray, alpha: NDArray) -> NDArray:
@@ -44,3 +51,36 @@ def uniform(low=0, high=1):
 
 def randn():
     return np.random.randn()
+
+
+def add_prefix_to_keys(
+    dictionary: dict[str, T],
+    prefix: str,
+) -> dict[str, T]:
+    """Adds a prefix to all keys in a dictionary."""
+    return {f"{prefix}{key}": value for key, value in dictionary.items()}
+
+
+def get_sorted_run_dirs(
+    simulation_dir: Path,
+    run_dir_prefix: str = "run",
+) -> list[Path]:
+    return sorted(
+        (
+            p
+            for p in simulation_dir.iterdir()
+            if p.is_dir() and p.name.startswith(f"{run_dir_prefix}_")
+        ),
+        key=lambda p: int(p.name.split("_")[-1]),
+    )
+
+
+class Plotable(Protocol):
+    def plot(self, ax: Axes, **kwargs): ...
+
+
+def save_figure(plotable: Plotable, save_path: Path, dpi: int, **kwargs) -> None:
+    fig, ax = plt.subplots()
+    plotable.plot(ax=ax, **kwargs)
+    plt.savefig(save_path, dpi=dpi)
+    plt.close(fig)

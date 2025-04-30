@@ -24,6 +24,14 @@ class Mobilities:
             gamma_p=0.0,
         )
 
+    def numeric_parameters(self) -> dict[str, float]:
+        return {
+            "mu_n": self.mu_n,
+            "mu_p": self.mu_p,
+            "gamma_n": self.gamma_n,
+            "gamma_p": self.gamma_p,
+        }
+
 
 @dataclass
 class Interface:
@@ -49,6 +57,16 @@ class Interface:
             C_p_int=1e-13,
         )
 
+    def numeric_parameters(self) -> dict[str, float]:
+        return {
+            "nu_int_n": self.nu_int_n,
+            "nu_int_p": self.nu_int_p,
+            "N_t_int": self.N_t_int,
+            "E_t_int": self.E_t_int,
+            "C_n_int": self.C_n_int,
+            "C_p_int": self.C_p_int,
+        }
+
 
 @dataclass
 class Ions:
@@ -67,6 +85,14 @@ class Ions:
             mu_cation=1e-14,
             ionsMayEnter=None,
         )
+
+    def numeric_parameters(self) -> dict[str, float]:
+        return {
+            "N_anion": self.N_anion,
+            "N_cation": self.N_cation,
+            "mu_anion": self.mu_anion,
+            "mu_cation": self.mu_cation,
+        }
 
 
 @dataclass
@@ -99,6 +125,16 @@ class Generation:
             useLangevin=1,
         )
 
+    def numeric_parameters(self) -> dict[str, float]:
+        return {
+            "G_ehp": self.G_ehp,
+            "P0": self.P0,
+            "a": self.a,
+            "k_f": self.k_f,
+            "k_direct": self.k_direct,
+            "preLangevin": self.preLangevin,
+        }
+
 
 @dataclass
 class BulkTrapping:
@@ -119,6 +155,14 @@ class BulkTrapping:
             bulkTrapFile="none",
             bulkTrapType=-1,
         )
+
+    def numeric_parameters(self) -> dict[str, float]:
+        return {
+            "N_t_bulk": self.N_t_bulk,
+            "C_n_bulk": self.C_n_bulk,
+            "C_p_bulk": self.C_p_bulk,
+            "E_t_bulk": self.E_t_bulk,
+        }
 
 
 @dataclass
@@ -152,6 +196,22 @@ class Layer(JSONSerializable):
             generation=Generation.get_default(),
             bulk=BulkTrapping.get_default(),
         )
+
+    def numeric_parameters(self) -> dict[str, float]:
+        return {
+            "L": self.L,
+            "eps_r": self.eps_r,
+            "E_c": self.E_c,
+            "E_v": self.E_v,
+            "N_c": self.N_c,
+            "N_D": self.N_D,
+            "N_A": self.N_A,
+            **self.mobilities.numeric_parameters(),
+            **self.interface.numeric_parameters(),
+            **self.ions.numeric_parameters(),
+            **self.generation.numeric_parameters(),
+            **self.bulk.numeric_parameters(),
+        }
 
     @classmethod
     def get_default_layer1(cls, path_to_simss: PathLike) -> "Layer":

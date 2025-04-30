@@ -6,6 +6,7 @@ from pySIMsalabim.experiments.EQE import run_EQE
 
 from simulation_tool.EQE.data import EQEData
 from simulation_tool.exceptions import SimulationError
+from simulation_tool.utils import save_figure
 
 
 @dataclass
@@ -35,14 +36,22 @@ def run_EQE_simulation(
             message=message,
         )
 
+    if not (session_path / "EQE.dat").exists():
+        return SimulationError(
+            simulation_type="EQE",
+            return_value=1,
+            message="Simulation did not produce the expected output files. Missing file: EQE.dat",
+        )
+
 
 def create_EQE_simulation_plots(
     session_path: Path,
     dpi: int,
 ):
-    EQEData.from_file(session_path / "EQE.dat").plot(
+    save_figure(
+        EQEData.from_file(session_path / "EQE.dat"),
+        save_path=session_path / "EQE.png",
         dpi=dpi,
-        save_path=session_path,
     )
 
 

@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 
 from simulation_tool.constants import M_TO_NM, NM_TO_M
 from simulation_tool.typing_ import Array1D
@@ -22,26 +21,20 @@ class AbsorptionCoefficientData:
 
     def plot(
         self,
-        dpi: int,
-        save_path: Path = Path("."),
+        ax: Axes,
     ):
         plot_absorption_coefficient(
-            self.x * M_TO_NM,
-            self.alpha * NM_TO_M,
-            dpi,
-            save_path,
+            ax=ax,
+            x=self.x * M_TO_NM,
+            alpha=self.alpha * NM_TO_M,
         )
 
 
 def plot_absorption_coefficient(
+    ax: Axes,
     x: Array1D,
     alpha: Array1D,
-    dpi: int,
-    save_path: Path = Path("."),
 ):
-    plt.figure()
-    plt.plot(x, alpha, "k-")
-    plt.xlabel("Position [nm]")
-    plt.ylabel("Absorption coefficient [1/nm]")
-    plt.savefig(f"{save_path}/alpha_of_x.png", dpi=dpi)
-    plt.close()
+    ax.plot(x, alpha, "k-")
+    ax.set_xlabel("Position [nm]")
+    ax.set_ylabel("Absorption coefficient [1/nm]")

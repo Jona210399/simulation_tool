@@ -9,7 +9,7 @@ class JSONSerializable(JSONPyWizard):
             file.write(self.to_json(indent=2))
 
     @classmethod
-    def from_json_file(cls, json_file: PathLike) -> "JSONSerializable":
+    def from_json_file(cls, json_file: PathLike):
         with open(json_file, "r") as file:
             json_str = file.read()
         return cls.from_json(json_str)

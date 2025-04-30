@@ -1,9 +1,9 @@
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
+from matplotlib.axes import Axes
 from scipy.constants import nano as NANO
 
 from simulation_tool.constants import M_TO_NM, NM_TO_M
@@ -61,11 +61,10 @@ class OpticalData:
             bandgap,
         )
 
-    def plot(self, dpi: int, save_path: Path = Path(".")):
+    def plot(self, ax: Axes):
         plot_optical_data(
+            ax=ax,
             **self.to_plotable_dict(),
-            dpi=dpi,
-            save_path=save_path,
         )
 
     def to_plotable_dict(self) -> dict[str, Array1D]:
@@ -80,20 +79,16 @@ class OpticalData:
 
 
 def plot_optical_data(
+    ax: Axes,
     wavelengths: Array1D,
     n: Array1D,
     k: Array1D,
-    dpi: int,
-    save_path: Path = Path("."),
 ):
-    plt.figure()
-    plt.plot(wavelengths * M_TO_NM, n, "k-", label="n")
-    plt.plot(wavelengths * M_TO_NM, k, "b-", label="k")
-    plt.legend()
-    plt.xlabel("Wavelength [nm]")
-    plt.ylabel("n/k [a.u.]")
-    plt.savefig(f"{save_path / 'optical_data.png'}", dpi=dpi)
-    plt.close()
+    ax.plot(wavelengths * M_TO_NM, n, "k-", label="n")
+    ax.plot(wavelengths * M_TO_NM, k, "b-", label="k")
+    ax.legend()
+    ax.set_xlabel("Wavelength [nm]")
+    ax.set_ylabel("n/k [a.u.]")
 
 
 def generate_n(wavelengths: Array1D) -> Array1D:

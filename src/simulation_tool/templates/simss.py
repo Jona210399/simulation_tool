@@ -1,6 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from simulation_tool.constants import SET_UP_FILE
 from simulation_tool.templates.serializeable import JSONSerializable
 from simulation_tool.typing_ import PathLike
 
@@ -44,6 +45,9 @@ class Contacts:
             R_series=0.0,
         )
 
+    def numeric_parameters(self) -> dict[str, float]:
+        return asdict(self)
+
 
 @dataclass
 class Optics:
@@ -72,6 +76,13 @@ class Optics:
             lambda_min=3.5e-7,
             lambda_max=8e-7,
         )
+
+    def numeric_parameters(self) -> dict[str, float]:
+        return {
+            "G_frac": self.G_frac,
+            "L_TCO": self.L_TCO,
+            "L_BE": self.L_BE,
+        }
 
 
 @dataclass
@@ -158,6 +169,7 @@ class UserInterface:
 
     @classmethod
     def get_default(cls) -> "UserInterface":
+        """The filenames are hardcoded in the simss code and should therefore not be changed."""
         return cls(
             timeout=-1,
             pauseAtEnd=0,
@@ -194,7 +206,7 @@ class SimssConfig(JSONSerializable):
     ) -> "SimssConfig":
         return cls(
             T=295.0,
-            setup_file=session_path / "simulation_setup",
+            setup_file=session_path / SET_UP_FILE,
             layers=LayerFiles.from_session_path(session_path),
             contacts=Contacts.get_default(),
             optics=Optics.get_default(path_to_simss),
@@ -202,6 +214,12 @@ class SimssConfig(JSONSerializable):
             voltage=VoltageRange.get_default(),
             ui=UserInterface.get_default(),
         )
+
+    def numeric_parameters(self) -> dict[str, float]:
+        return {
+            **self.contacts.numeric_parameters(),
+            **self.optics.numeric_parameters(),
+        }
 
 
 sims = SimssConfig.from_session(

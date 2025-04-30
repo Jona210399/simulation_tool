@@ -6,6 +6,7 @@ from pySIMsalabim.experiments.JV_steady_state import run_SS_JV
 from simulation_tool.data import AbsorptionCoefficientData, ElectricFieldData, UVVisData
 from simulation_tool.exceptions import SimulationError
 from simulation_tool.jV.data import JVData
+from simulation_tool.utils import save_figure
 
 
 def run_jV_simulation(
@@ -25,35 +26,55 @@ def run_jV_simulation(
             message=message,
         )
 
+    files_to_check = [
+        "AbsorptionSpectrum.txt",
+        "reflection_transmission_spectrum.txt",
+        "E_of_x.txt",
+        "alpha_of_x.txt",
+        "JV.dat",
+        "scPars.txt",
+    ]
+    for file in files_to_check:
+        if not (session_path / file).exists():
+            return SimulationError(
+                simulation_type="jV",
+                return_value=1,
+                message=f"Simulation did not produce the expected output files. Missing file: {file}",
+            )
+
 
 def create_jV_simulation_plots(
     session_path: Path,
     dpi: int,
 ):
-    JVData.from_files(
-        device_characteristics_file=session_path / "scPars.txt",
-        jv_file=session_path / "JV.dat",
-    ).plot(
-        save_path=session_path,
+    save_figure(
+        UVVisData.from_files(
+            uvvis_file=session_path / "AbsorptionSpectrum.txt",
+            rt_file=session_path / "reflection_transmission_spectrum.txt",
+        ),
+        save_path=session_path / "uvvis.png",
         dpi=dpi,
     )
 
-    UVVisData.from_files(
-        f"{session_path}/AbsorptionSpectrum.txt",
-        f"{session_path}/reflection_transmission_spectrum.txt",
-    ).plot(
+    save_figure(
+        ElectricFieldData.from_file(f"{session_path}/E_of_x.txt"),
+        save_path=session_path / "E_of_x.png",
         dpi=dpi,
-        save_path=session_path,
     )
 
-    ElectricFieldData.from_file(f"{session_path}/E_of_x.txt").plot(
+    save_figure(
+        AbsorptionCoefficientData.from_file(f"{session_path}/alpha_of_x.txt"),
+        save_path=session_path / "alpha_of_x.png",
         dpi=dpi,
-        save_path=session_path,
     )
 
-    AbsorptionCoefficientData.from_file(f"{session_path}/alpha_of_x.txt").plot(
+    save_figure(
+        JVData.from_files(
+            device_characteristics_file=session_path / "scPars.txt",
+            jv_file=session_path / "JV.dat",
+        ),
+        save_path=session_path / "jV.png",
         dpi=dpi,
-        save_path=session_path,
     )
 
 

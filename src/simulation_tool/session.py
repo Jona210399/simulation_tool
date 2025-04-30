@@ -35,10 +35,9 @@ def collect_session_data(session_path: Path):
     data_dir = session_path / "data"
     data_dir.mkdir(exist_ok=True)
 
-    for ext in ("*.txt", "*.json"):
-        for data_file in session_path.glob(ext):
-            destination = data_dir / data_file.name
-            shutil.move(data_file, destination)
+    for data_file in session_path.glob("*.txt"):
+        destination = data_dir / data_file.name
+        shutil.move(data_file, destination)
 
 
 def delete_session(session_path: Path):

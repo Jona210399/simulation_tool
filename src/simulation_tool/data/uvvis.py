@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 
 from simulation_tool.constants import M_TO_NM
 from simulation_tool.typing_ import Array1D, PathLike
@@ -33,51 +32,116 @@ class UVVisData:
 
     def plot(
         self,
-        dpi: int,
-        save_path: Path = Path("."),
+        ax: Axes,
+        linewidth: float = 1.0,
+        alpha: float = 1.0,
     ):
         plot_uvvis(
-            self.wavelengths * M_TO_NM,
-            self.absorption,
-            self.reflection,
-            self.transmission,
-            dpi,
-            save_path,
+            ax=ax,
+            wavelengths=self.wavelengths * M_TO_NM,
+            absorption=self.absorption * 100,
+            reflection=self.reflection * 100,
+            transmission=self.transmission * 100,
+            linewidth=linewidth,
+            alpha=alpha,
+        )
+
+    def plot_absorption(
+        self,
+        ax: Axes,
+        linewidth: float = 1.0,
+        alpha: float = 1.0,
+    ):
+        plot_uvvis(
+            ax=ax,
+            wavelengths=self.wavelengths * M_TO_NM,
+            absorption=self.absorption * 100,
+            reflection=None,
+            transmission=None,
+            linewidth=linewidth,
+            alpha=alpha,
+        )
+
+    def plot_reflection(
+        self,
+        ax: Axes,
+        linewidth: float = 1.0,
+        alpha: float = 1.0,
+    ):
+        plot_uvvis(
+            ax=ax,
+            wavelengths=self.wavelengths * M_TO_NM,
+            absorption=None,
+            reflection=self.reflection * 100,
+            transmission=None,
+            linewidth=linewidth,
+            alpha=alpha,
+        )
+
+    def plot_transmission(
+        self,
+        ax: Axes,
+        linewidth: float = 1.0,
+        alpha: float = 1.0,
+    ):
+        plot_uvvis(
+            ax=ax,
+            wavelengths=self.wavelengths * M_TO_NM,
+            absorption=None,
+            reflection=None,
+            transmission=self.transmission * 100,
+            linewidth=linewidth,
+            alpha=alpha,
         )
 
 
 def plot_uvvis(
+    ax: Axes,
     wavelengths: Array1D,
-    absorption: Array1D,
-    reflection: Array1D,
-    transmission: Array1D,
-    dpi: int,
-    save_path: Path = Path("."),
+    absorption: Array1D | None,
+    reflection: Array1D | None,
+    transmission: Array1D | None,
+    linewidth: float = 1.0,
+    alpha: float = 1.0,
 ):
-    plt.figure()
-    plt.plot(
-        wavelengths,
-        absorption,
-        "-",
-        color="C0",
-        label="absorption",
-    )
-    plt.plot(
-        wavelengths,
-        reflection,
-        "-",
-        color="C1",
-        label="reflection",
-    )
-    plt.plot(
-        wavelengths,
-        transmission,
-        "-",
-        color="C2",
-        label="transmission",
-    )
-    plt.xlabel("Wavelength [nm]")
-    plt.ylabel("Absorption [a.u.]")
-    plt.legend(loc="best")
-    plt.savefig(f"{save_path}/uvvis_absorption_spectrum.png", dpi=dpi)
-    plt.close()
+    ylabel = ""
+
+    if absorption is not None:
+        ax.plot(
+            wavelengths,
+            absorption,
+            "-",
+            label="absorption",
+            linewidth=linewidth,
+            alpha=alpha,
+        )
+        ylabel += "absorption"
+
+    if reflection is not None:
+        ax.plot(
+            wavelengths,
+            reflection,
+            "-",
+            label="reflection",
+            linewidth=linewidth,
+            alpha=alpha,
+        )
+        ylabel += "reflection" if ylabel == "" else " / reflection"
+
+    if transmission is not None:
+        ax.plot(
+            wavelengths,
+            transmission,
+            "-",
+            label="transmission",
+            linewidth=linewidth,
+            alpha=alpha,
+        )
+        ylabel += "transmission" if ylabel == "" else " / transmission"
+
+    ylabel += " [%]"
+    ax.set_xlabel("Wavelength [nm]")
+    ax.set_ylabel(ylabel)
+
+    if sum(x is not None for x in (absorption, reflection, transmission)) > 1:
+        ax.legend(loc="best")

@@ -5,7 +5,7 @@ import numpy as np
 
 import simulation_tool.templates.to_text as to_text
 from simulation_tool import SimulationError
-from simulation_tool.constants import M_TO_NM, NANO
+from simulation_tool.constants import M_TO_NM, NANO, RUN_DIR_PREFIX
 from simulation_tool.data import BandDiagramData, OpticalData
 from simulation_tool.EQE import (
     EQEParameters,
@@ -27,6 +27,7 @@ from simulation_tool.templates.randomization import (
     randomize_simss_config,
 )
 from simulation_tool.templates.simss import SimssConfig
+from simulation_tool.utils import save_figure
 
 PATH_TO_SIMSS = Path(
     "/home/jona/Promotion/Repositories/simsalabim/pySIMsalabim/SIMsalabim/SimSS"
@@ -91,7 +92,7 @@ def prepare_simulation(
         wavelenght_step=WAVE_LENGTH_STEP,
     )
 
-    optical_data.plot(dpi=DPI, save_path=session_path)
+    save_figure(optical_data, save_path=session_path / "nk.png", dpi=DPI)
     optical_data.save(session_path)
 
     layers = create_layer_stack(
@@ -180,7 +181,7 @@ def run(
     randomized: bool,
 ):
     np.random.seed(process_id)
-    session_path = simulation_dir / f"run_{process_id}"
+    session_path = simulation_dir / f"{RUN_DIR_PREFIX}_{process_id}"
     set_up_session(
         path_to_simss=PATH_TO_SIMSS,
         session_path=session_path,
@@ -236,7 +237,7 @@ def run_parallel(
 
 def main():
     simulation_dir = Path.cwd() / "simulation_runs"
-    run_parallel(simulation_dir, num_workers=1, num_todo=1, randomized=False)
+    run_parallel(simulation_dir, num_workers=2, num_todo=20, randomized=False)
 
 
 if __name__ == "__main__":

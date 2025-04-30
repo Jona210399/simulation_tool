@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from pathlib import Path
 
-import matplotlib.pyplot as plt
 import polars as pl
+from matplotlib.axes import Axes
 
 from simulation_tool.typing_ import Array1D, PathLike
 
@@ -42,45 +41,59 @@ class JVData:
             ff,
         )
 
+    def calculate_pce(self, pin: float = 1000.0) -> float:
+        """
+        Calculate the power conversion efficiency (PCE) in % based on the
+        current density (Jsc), open-circuit voltage (Voc), fill factor (FF),
+        and the incident light power density (Pin) in (W/m²).
+        """
+        return -1.0 * (self.jsc * self.voc * self.ff) / pin * 100.0
+
     def plot(
         self,
-        dpi: int,
-        save_path: Path = Path("."),
+        ax: Axes,
+        linewidth: float = 1.0,
+        label: bool = True,
+        alpha: float = 1.0,
     ):
         plot_jV(
-            self.v_ext,
-            self.j_ext,
-            self.voc,
-            self.jsc,
-            self.ff,
-            dpi,
-            save_path,
+            ax=ax,
+            v_ext=self.v_ext,
+            j_ext=self.j_ext,
+            voc=self.voc,
+            jsc=self.jsc,
+            ff=self.ff,
+            linewidth=linewidth,
+            label=label,
+            alpha=alpha,
         )
 
 
 def plot_jV(
+    ax: Axes,
     v_ext: Array1D,
     j_ext: Array1D,
     voc: float,
     jsc: float,
     ff: float,
-    dpi: int,
-    save_path: Path = Path("."),
+    linewidth: float = 1.0,
+    label: bool = True,
+    alpha: float = 1.0,
 ):
-    plt.figure()
-    plt.plot(
+    label = f"Voc={voc:.2f}, Jsc={jsc:.1f}, FF={ff * 100.0:.1f}%" if label else None
+    ax.plot(
         v_ext,
         j_ext,
-        label=f"Voc={voc:.2f}, Jsc={jsc:.1f}, FF={ff * 100.0:.1f}%",
+        label=label,
+        linewidth=linewidth,
+        alpha=alpha,
     )
-    plt.xlabel("V$_{ext}$ [V]")
-    plt.ylabel("J$_{ext}$ [A m$^{-2}$]")
-    plt.xlim([-0.5, 1.7])
-    plt.ylim([-200, 100])
-    plt.plot([-10, 10], [0, 0], "k--")
-    plt.plot([0, 0], [-1000.0, 1000.0], "k--")
-    plt.legend(loc="upper left")
-    plt.xlabel("Voltage [V]")
-    plt.ylabel("Current density [A/$m^{2}$]")
-    plt.savefig(f"{save_path}/jV.png", dpi=dpi)
-    plt.close()
+    ax.set_xlabel("V$_{ext}$ [V]")
+    ax.set_ylabel("J$_{ext}$ [A m$^{-2}$]")
+
+    ax.axhline(0, color="k", linestyle="--")
+    ax.axvline(0, color="k", linestyle="--")
+    ax.set_ylim([-200, 200])
+
+    if label:
+        ax.legend(loc="upper left")

@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import polars as pl
+from matplotlib.axes import Axes
 
 from simulation_tool.constants import M_TO_NM
 from simulation_tool.typing_ import Array1D
@@ -25,28 +25,26 @@ class EQEData:
 
     def plot(
         self,
-        dpi: int,
-        save_path: Path = Path("."),
+        ax: Axes,
+        linewidth: float = 1.0,
+        alpha: float = 1.0,
     ):
         plot_EQE(
-            self.eqe,
-            self.wavelengths * M_TO_NM,
-            dpi,
-            save_path,
+            ax=ax,
+            eqe=self.eqe * 100,
+            wavelengths=self.wavelengths * M_TO_NM,
+            linewidth=linewidth,
+            alpha=alpha,
         )
 
 
 def plot_EQE(
+    ax: Axes,
     eqe: Array1D,
     wavelengths: Array1D,
-    dpi: int,
-    save_path: Path = Path("."),
+    linewidth: float = 1.0,
+    alpha: float = 1.0,
 ):
-    plt.figure()
-    plt.plot(wavelengths, eqe)
-    plt.xlabel("Wavelength [nm]")
-    plt.ylabel("EQE")
-    plt.xlabel("Wavelength [nm]")
-    plt.ylabel("EQE [%]")
-    plt.savefig(f"{save_path}/EQE.png", dpi=dpi)
-    plt.close()
+    ax.plot(wavelengths, eqe, linewidth=linewidth, alpha=alpha)
+    ax.set_xlabel("Wavelength [nm]")
+    ax.set_ylabel("EQE [%]")
