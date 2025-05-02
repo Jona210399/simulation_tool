@@ -8,18 +8,15 @@ from simulation_tool.templates.simss import SimssConfig
 
 
 def set_up_session(
-    path_to_simss: Path,
+    path_to_executable: Path,
     session_path: Path,
 ):
-    if not path_to_simss.exists():
+    if not path_to_executable.exists():
         raise FileNotFoundError(
-            f"Path to simss executable: {path_to_simss} does not exist."
+            f"Path to  xecutable: {path_to_executable} does not exist."
         )
 
-    if not session_path.exists():
-        session_path.mkdir(parents=True, exist_ok=True)
-
-    shutil.copy(path_to_simss / "simss", session_path)
+    session_path.mkdir(parents=True, exist_ok=True)
 
 
 def collect_session_plots(session_path: Path):
@@ -54,9 +51,6 @@ def clean_session(
 
     collect_session_plots(session_path)
     collect_session_data(session_path)
-
-    if (session_path / "simss").exists():
-        os.remove(session_path / "simss")
 
     if (session_path / simss_config.ui.varFile).exists():
         os.remove(session_path / simss_config.ui.varFile)

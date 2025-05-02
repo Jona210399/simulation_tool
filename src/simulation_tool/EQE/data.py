@@ -19,8 +19,13 @@ class EQEData:
             file_path,
             separator=" ",
         )
-        wavelengths = data["lambda"].to_numpy()
-        eqe = data["EQE"].to_numpy()
+
+        return cls.from_dataframe(data)
+
+    @classmethod
+    def from_dataframe(cls, df: pl.DataFrame) -> "EQEData":
+        wavelengths = df["lambda"].to_numpy()
+        eqe = df["EQE"].to_numpy()
         return cls(wavelengths, eqe)
 
     def plot(

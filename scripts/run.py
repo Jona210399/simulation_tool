@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from pathlib import Path
 
 import joblib
@@ -5,12 +6,11 @@ import numpy as np
 
 import simulation_tool.templates.to_text as to_text
 from simulation_tool import SimulationError
-from simulation_tool.constants import M_TO_NM, NANO, RUN_DIR_PREFIX
+from simulation_tool.constants import NANO, RUN_DIR_PREFIX
 from simulation_tool.data import BandDiagramData, OpticalData
 from simulation_tool.EQE import (
     EQEParameters,
     create_EQE_simulation_plots,
-    preserve_EQE_simulation_output,
     run_EQE_simulation,
 )
 from simulation_tool.jV import (
@@ -35,8 +35,7 @@ PATH_TO_SIMSS = Path(
 DPI = 60
 ADJUST_BAND_DIAGRAM_Y_AXIS = True
 WAVE_LENGTH_STEP = NANO  # Used for optical data generation
-LAMBDA_STEP = 10  # Used for EQE simulation
-VEXT = 0
+LAMBDA_STEP = 10 * NANO  # Used for EQE simulation
 
 
 def create_layer_stack(
@@ -140,12 +139,14 @@ def prepare_simulation(
 
 def run_simulations(
     session_path: Path,
+    path_to_executable: Path,
     setup_file: Path,
     eqe_parameters: EQEParameters,
 ) -> str:
     simulation_result = run_jV_simulation(
         session_path=session_path,
-        simss_device_parameters=setup_file,
+        setup_file=setup_file,
+        path_to_executable=path_to_executable,
     )
     if isinstance(simulation_result, SimulationError):
         delete_session(session_path)
@@ -161,8 +162,9 @@ def run_simulations(
 
     simulation_result = run_EQE_simulation(
         session_path=session_path,
-        simss_device_parameters=setup_file,
-        eqe_parameters=eqe_parameters,
+        setup_file=setup_file,
+        path_to_executable=path_to_executable,
+        **asdict(eqe_parameters),
     )
 
     if isinstance(simulation_result, SimulationError):
@@ -170,7 +172,6 @@ def run_simulations(
         return f"ERROR {simulation_result}"
 
     create_EQE_simulation_plots(session_path=session_path, dpi=DPI)
-    preserve_EQE_simulation_output(session_path=session_path)
 
     return "DONE"
 
@@ -183,7 +184,7 @@ def run(
     np.random.seed(process_id)
     session_path = simulation_dir / f"{RUN_DIR_PREFIX}_{process_id}"
     set_up_session(
-        path_to_simss=PATH_TO_SIMSS,
+        path_to_executable=PATH_TO_SIMSS / "simss",
         session_path=session_path,
     )
 
@@ -195,14 +196,14 @@ def run(
 
     eqe_parameters = EQEParameters(
         spectrum=smiss_config.optics.spectrum,
-        lambda_min=smiss_config.optics.lambda_min * M_TO_NM,
-        lambda_max=smiss_config.optics.lambda_max * M_TO_NM,
+        lambda_min=smiss_config.optics.lambda_min,
+        lambda_max=smiss_config.optics.lambda_max,
         lambda_step=LAMBDA_STEP,
-        Vext=VEXT,
     )
 
     result = run_simulations(
         session_path=session_path,
+        path_to_executable=PATH_TO_SIMSS / "simss",
         setup_file=smiss_config.setup_file,
         eqe_parameters=eqe_parameters,
     )
@@ -237,7 +238,7 @@ def run_parallel(
 
 def main():
     simulation_dir = Path.cwd() / "simulation_runs"
-    run_parallel(simulation_dir, num_workers=2, num_todo=20, randomized=False)
+    run_parallel(simulation_dir, num_workers=1, num_todo=1, randomized=False)
 
 
 if __name__ == "__main__":

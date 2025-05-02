@@ -58,7 +58,7 @@ class Optics:
     nkSubstrate: str
     nkTCO: str
     nkBE: str
-    spectrum: str
+    spectrum: Path
     lambda_min: float
     lambda_max: float
 
@@ -72,7 +72,7 @@ class Optics:
             nkSubstrate=f"{path_to_simss}/../Data/nk_SiO2.txt",
             nkTCO=f"{path_to_simss}/../Data/nk_ITO.txt",
             nkBE=f"{path_to_simss}/../Data/nk_Al.txt",
-            spectrum=f"{path_to_simss}/../Data/AM15G.txt",
+            spectrum=path_to_simss / "../Data/AM15G.txt",
             lambda_min=3.5e-7,
             lambda_max=8e-7,
         )
