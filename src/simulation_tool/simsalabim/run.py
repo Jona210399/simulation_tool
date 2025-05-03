@@ -58,15 +58,11 @@ def run_simulation(
 
     if result.returncode != 0:
         return SimulationError(
-            simulation_type="",
-            return_value=result.returncode,
-            message=f"Simulation failed with return code {result.returncode}. Check the output files for more details.",
+            message=f"Simulation failed with return code {result.returncode}. Check the output files for more details. Error",
         )
 
     if not scPars_file.exists():
         return SimulationError(
-            simulation_type="",
-            return_value=1,
             message="Simulation did not produce the expected output files. Missing file: scPars.dat",
         )
 

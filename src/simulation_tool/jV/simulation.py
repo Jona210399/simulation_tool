@@ -32,10 +32,10 @@ def run_jV_simulation(
     for file in files_to_check:
         if not (session_path / file).exists():
             return SimulationError(
-                simulation_type="jV",
-                return_value=1,
                 message=f"Simulation did not produce the expected output files. Missing file: {file}",
             )
+
+    return None
 
 
 def create_jV_simulation_plots(
