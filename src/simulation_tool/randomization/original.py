@@ -4,6 +4,10 @@ from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig
 from simulation_tool.utils import loguniform, randn, uniform
 
+ENERGY_LEVEL_OFFSET = 0.1  # eV
+
+N_C_RANGE = (1e25, 1e27)
+
 
 def randomize_layer1(
     layer: Layer,
@@ -15,8 +19,8 @@ def randomize_layer1(
 
     layer.eps_r = randn() * 1.0 + 4.0
 
-    layer.E_c = randn() * 0.1 + layer2_E_c + 0.1
-    layer.E_v = randn() * 0.1 + layer2_E_v + 0.1
+    layer.E_c = randn() * 0.1 + layer2_E_c + ENERGY_LEVEL_OFFSET
+    layer.E_v = randn() * 0.1 + layer2_E_v + ENERGY_LEVEL_OFFSET
 
     layer.N_c = loguniform(low=1e16, high=1e27)
     layer.N_D = loguniform(low=1e16, high=1e21)
@@ -81,8 +85,8 @@ def randomize_layer3(
     layer_factor = (np.log(layer.L) - np.log(3e-9)) / (np.log(3e-7) - np.log(3e-9))
 
     layer.eps_r = randn() * 1.0 + 4.0
-    layer.E_c = randn() * 0.1 + layer2_E_c - 0.1
-    layer.E_v = randn() * 0.1 + layer2_E_v - 0.1
+    layer.E_c = randn() * 0.1 + layer2_E_c - ENERGY_LEVEL_OFFSET
+    layer.E_v = randn() * 0.1 + layer2_E_v - ENERGY_LEVEL_OFFSET
 
     layer.N_c = loguniform(low=1e24, high=1e27)
     layer.N_D = loguniform(low=1e16, high=1e21)

@@ -122,7 +122,7 @@ class Generation:
             k_f=1e6,
             k_direct=1e-18,
             preLangevin=1.0,
-            useLangevin=1,
+            useLangevin=0,
         )
 
     def numeric_parameters(self) -> dict[str, float]:

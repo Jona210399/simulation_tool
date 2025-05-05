@@ -18,14 +18,14 @@ from simulation_tool.jV import (
     preserve_jV_simulation_output,
     run_jV_simulation,
 )
-from simulation_tool.session import clean_session, delete_session, set_up_session
-from simulation_tool.templates.layer import Layer
-from simulation_tool.templates.randomization import (
+from simulation_tool.randomization.original import (
     randomize_layer1,
     randomize_layer2,
     randomize_layer3,
     randomize_simss_config,
 )
+from simulation_tool.session import clean_session, set_up_session
+from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig
 from simulation_tool.utils import save_figure
 
@@ -149,7 +149,7 @@ def run_simulations(
         path_to_executable=path_to_executable,
     )
     if isinstance(simulation_result, SimulationError):
-        delete_session(session_path)
+        # delete_session(session_path)
         return f"ERROR {simulation_result}"
 
     create_jV_simulation_plots(
@@ -168,7 +168,7 @@ def run_simulations(
     )
 
     if isinstance(simulation_result, SimulationError):
-        delete_session(session_path)
+        # delete_session(session_path)
         return f"ERROR {simulation_result}"
 
     create_EQE_simulation_plots(session_path=session_path, dpi=DPI)
@@ -238,7 +238,7 @@ def run_parallel(
 
 def main():
     simulation_dir = Path.cwd() / "simulation_runs"
-    run_parallel(simulation_dir, num_workers=1, num_todo=1, randomized=False)
+    run_parallel(simulation_dir, num_workers=2, num_todo=20, randomized=True)
 
 
 if __name__ == "__main__":
