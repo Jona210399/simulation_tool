@@ -53,6 +53,10 @@ def randn():
     return np.random.randn()
 
 
+def randint(low=0, high=1):
+    return np.random.randint(low, high)
+
+
 def add_prefix_to_keys(
     dictionary: dict[str, T],
     prefix: str,

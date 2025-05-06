@@ -1,25 +1,30 @@
-from simulation_tool.constants import NANO
 from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig
-from simulation_tool.utils import loguniform, randn, uniform
+from simulation_tool.utils import loguniform, randint, randn, uniform
 
 OPV = False
-ENERGY_LEVEL_OFFSET = 0.5  # eV
+ENERGY_LEVEL_OFFSET = 0.1  # eV
+L2_E_C_OFFSET = 3.0  # eV
 
 N_C_RANGE = (1e25, 1e27)
 N_D_A_RANGE = (1e16, 1e21)
 
-L_RANGE = (3 * NANO, 300 * NANO)
-L2_L_RANGE_OPV = (50 * NANO, 200 * NANO)
-L2_L_RANGE_PEROVSKITE = (300 * NANO, 1000 * NANO)
+L_RANGE = (3e-9, 3e-7)
+L2_L_RANGE_OPV = (5e-8, 2e-7)
+L2_L_RANGE_PEROVSKITE = (3e-7, 1e-6)
 L2_L_RANGE = L2_L_RANGE_OPV if OPV else L2_L_RANGE_PEROVSKITE
 
-MOBILITY_RANGE = (1e-9, 1e-0)
+MOBILITY_RANGE = (1e-8, 1e-3)  # (1e-9, 1e0)
 L2_MOBILITY_RANGE_OPV = (5e-9, 1e-6)
-L2_MOBILITY_RANGE_PEROVSKITE = (5e-9, 1e-0)
-L2_MOBILITY_RANGE = L2_MOBILITY_RANGE_OPV if OPV else L2_MOBILITY_RANGE_PEROVSKITE
+L2_MOBILITY_RANGE_PEROVSKITE = (5e-9, 1e0)
+L2_MOBILITY_RANGE = (
+    1e-8,
+    1e-2,
+)  # L2_MOBILITY_RANGE_OPV if OPV else L2_MOBILITY_RANGE_PEROVSKITE
 
 INTERFACE_C_N_P_RANGE = (1e-15, 1e-11)
+INTERFACE_N_INT_RANGE = (1e14, 1e17)
+INTERFACE_E_T_INT_OFFSET = 0.05
 
 L2_KF_RANGE = (1e4, 1e8)
 L2_K_DIRECT_RANGE = (1e-18, 1e-10)
@@ -37,6 +42,38 @@ L_TCO_RANGE = (1e-8, 4e-7)
 L_BE_RANGE = (1e-8, 1e-7)
 
 
+def randomize_device(
+    layer1: Layer,
+    layer2: Layer,
+    layer3: Layer,
+    simss_config: SimssConfig,
+    bandgap: float,
+) -> tuple[tuple[Layer, Layer, Layer], SimssConfig]:
+    layer2 = _randomize_layer2(layer=layer2, bandgap=bandgap)
+    layer1 = _randomize_layer1(
+        layer=layer1,
+        layer2_E_c=layer2.E_c,
+        layer2_E_v=layer2.E_v,
+    )
+    layer3 = _randomize_layer3(
+        layer=layer3,
+        layer2_E_c=layer2.E_c,
+        layer2_E_v=layer2.E_v,
+    )
+
+    layer2.interface.E_t_int = uniform(
+        layer2.E_c + INTERFACE_E_T_INT_OFFSET,
+        layer3.E_v - INTERFACE_E_T_INT_OFFSET,
+    )
+
+    simss_config = _randomize_simss_config(
+        simss_config=simss_config,
+        layer1_E_c=layer1.E_c,
+        layer3_E_v=layer3.E_v,
+    )
+    return (layer1, layer2, layer3), simss_config
+
+
 def _common_randomization(
     layer: Layer,
     l_range: tuple[float, float],
@@ -52,8 +89,10 @@ def _common_randomization(
     layer.mobilities.mu_n = loguniform(*mobility_range)
     layer.mobilities.mu_p = loguniform(*mobility_range)
 
+    layer.interface.N_t_int = loguniform(*INTERFACE_N_INT_RANGE)
     layer.interface.C_n_int = loguniform(*INTERFACE_C_N_P_RANGE)
     layer.interface.C_p_int = loguniform(*INTERFACE_C_N_P_RANGE)
+    layer.interface.intTrapType = randint(-1, 2)
 
     layer.bulk.N_t_bulk = loguniform(*BULK_N_T_RANGE)
     layer.bulk.C_n_bulk = loguniform(*BULK_C_N_RANGE)
@@ -65,13 +104,17 @@ def _common_randomization(
     return layer
 
 
-def randomize_layer1(
+def _randomize_layer1(
     layer: Layer,
     layer2_E_c: float,
     layer2_E_v: float,
 ) -> Layer:
     layer.E_c = randn() * 0.1 + layer2_E_c + ENERGY_LEVEL_OFFSET
     layer.E_v = randn() * 0.1 + layer2_E_v + ENERGY_LEVEL_OFFSET
+    layer.interface.E_t_int = uniform(
+        layer.E_c + INTERFACE_E_T_INT_OFFSET,
+        layer2_E_v - INTERFACE_E_T_INT_OFFSET,
+    )
 
     layer = _common_randomization(
         layer=layer,
@@ -82,11 +125,11 @@ def randomize_layer1(
     return layer
 
 
-def randomize_layer2(
+def _randomize_layer2(
     layer: Layer,
     bandgap: float,
 ):
-    layer.E_c = randn() * 0.5 + 3.0
+    layer.E_c = randn() * 0.5 + L2_E_C_OFFSET
     layer.E_v = layer.E_c + bandgap
     layer.mobilities.gamma_n = 0.0
     layer.generation.k_f = loguniform(*L2_KF_RANGE)
@@ -101,7 +144,7 @@ def randomize_layer2(
     return layer
 
 
-def randomize_layer3(
+def _randomize_layer3(
     layer: Layer,
     layer2_E_c: float,
     layer2_E_v: float,
@@ -114,11 +157,12 @@ def randomize_layer3(
         l_range=L_RANGE,
         mobility_range=MOBILITY_RANGE,
     )
+    layer.interface.N_t_int = 0.0  # disables trapping at interface to electrode
 
     return layer
 
 
-def randomize_simss_config(
+def _randomize_simss_config(
     simss_config: SimssConfig,
     layer1_E_c: float,
     layer3_E_v: float,

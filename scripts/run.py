@@ -18,12 +18,7 @@ from simulation_tool.jV import (
     preserve_jV_simulation_output,
     run_jV_simulation,
 )
-from simulation_tool.randomization.original import (
-    randomize_layer1,
-    randomize_layer2,
-    randomize_layer3,
-    randomize_simss_config,
-)
+from simulation_tool.randomization.kf_adapted import randomize_device
 from simulation_tool.session import clean_session, set_up_session
 from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig
@@ -42,7 +37,7 @@ def create_layer_stack(
     session_path: Path,
     path_to_simss: Path,
     bandgap: float,
-) -> list[Layer]:
+) -> tuple[Layer, Layer, Layer]:
     layer1 = Layer.get_default_layer1(path_to_simss=path_to_simss)
     layer2 = Layer.get_default_layer2(
         session_path=session_path,
@@ -50,12 +45,12 @@ def create_layer_stack(
     )
     layer3 = Layer.get_default_layer3(path_to_simss=path_to_simss)
 
-    return [layer1, layer2, layer3]
+    return layer1, layer2, layer3
 
 
 def write_simulation_input_files(
     simss_config: SimssConfig,
-    layers: list[Layer],
+    layers: tuple[Layer, Layer, Layer],
 ):
     with open(simss_config.setup_file, "w") as outfile:
         outfile.write(to_text.simms_config_to_text(simss_config=simss_config))
@@ -100,24 +95,9 @@ def prepare_simulation(
         bandgap=optical_data.bandgap,
     )
 
-    layer1, layer2, layer3 = layers
-
     if randomized:
-        layer2 = randomize_layer2(layer=layer2, bandgap=optical_data.bandgap)
-        layer1 = randomize_layer1(
-            layer=layer1,
-            layer2_E_c=layer2.E_c,
-            layer2_E_v=layer2.E_v,
-        )
-        layer3 = randomize_layer3(
-            layer=layer3,
-            layer2_E_c=layer2.E_c,
-            layer2_E_v=layer2.E_v,
-        )
-        simss_config = randomize_simss_config(
-            simss_config=simss_config,
-            layer1_E_c=layer1.E_c,
-            layer3_E_v=layer3.E_v,
+        layers, simss_config = randomize_device(
+            *layers, simss_config=simss_config, bandgap=optical_data.bandgap
         )
 
     write_simulation_input_files(simss_config, layers)
@@ -180,7 +160,7 @@ def run(
     simulation_dir: Path,
     process_id: int,
     randomized: bool,
-):
+) -> str:
     np.random.seed(process_id)
     session_path = simulation_dir / f"{RUN_DIR_PREFIX}_{process_id}"
     set_up_session(
@@ -229,11 +209,21 @@ def run_parallel(
         for process_id in range(num_todo)
     ]
 
-    results = list(parallel(jobs))
+    results: list[str] = list(parallel(jobs))
 
+    error_count = 0
     with open(simulation_dir / "results.txt", "w") as outfile:
         for idx, x in enumerate(results):
+            if x.startswith("ERROR"):
+                error_count += 1
             outfile.write(f"{idx} {x}\n")
+
+    print(f"Number of runs: {num_todo}")
+    print(f"Number of errors: {error_count}")
+    print(f"Number of successful runs: {num_todo - error_count}")
+    print(
+        f"Percentage of successful runs: {(num_todo - error_count) / num_todo * 100:.2f}%"
+    )
 
 
 def main():

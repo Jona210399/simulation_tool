@@ -6,10 +6,34 @@ from simulation_tool.utils import loguniform, randn, uniform
 
 ENERGY_LEVEL_OFFSET = 0.1  # eV
 
-N_C_RANGE = (1e25, 1e27)
+
+def randomize_device(
+    layer1: Layer,
+    layer2: Layer,
+    layer3: Layer,
+    simss_config: SimssConfig,
+    bandgap: float,
+) -> tuple[tuple[Layer, Layer, Layer], SimssConfig]:
+    layer2 = _randomize_layer2(layer=layer2, bandgap=bandgap)
+    layer1 = _randomize_layer1(
+        layer=layer1,
+        layer2_E_c=layer2.E_c,
+        layer2_E_v=layer2.E_v,
+    )
+    layer3 = _randomize_layer3(
+        layer=layer3,
+        layer2_E_c=layer2.E_c,
+        layer2_E_v=layer2.E_v,
+    )
+    simss_config = _randomize_simss_config(
+        simss_config=simss_config,
+        layer1_E_c=layer1.E_c,
+        layer3_E_v=layer3.E_v,
+    )
+    return (layer1, layer2, layer3), simss_config
 
 
-def randomize_layer1(
+def _randomize_layer1(
     layer: Layer,
     layer2_E_c: float,
     layer2_E_v: float,
@@ -40,7 +64,7 @@ def randomize_layer1(
     return layer
 
 
-def randomize_layer2(
+def _randomize_layer2(
     layer: Layer,
     bandgap: float,
 ):
@@ -76,7 +100,7 @@ def randomize_layer2(
     return layer
 
 
-def randomize_layer3(
+def _randomize_layer3(
     layer: Layer,
     layer2_E_c: float,
     layer2_E_v: float,
@@ -110,7 +134,7 @@ def randomize_layer3(
     return layer
 
 
-def randomize_simss_config(
+def _randomize_simss_config(
     simss_config: SimssConfig,
     layer1_E_c: float,
     layer3_E_v: float,
