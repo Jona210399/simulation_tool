@@ -214,14 +214,14 @@ def save_optical_data(
 ]:
     np.savetxt(save_dir / "nk_n.txt", n := np.stack([opt.n for opt in optical]))
     np.savetxt(save_dir / "nk_k.txt", k := np.stack([opt.k for opt in optical]))
-    np.savetxt(save_dir / "nk_wavelenghts.txt", wavelenghts := optical[0].wavelengths)
+    np.savetxt(save_dir / "nk_wavelenghts.txt", wavelenghts := optical[0].wavelenghts)
 
     return n, k, wavelenghts
 
 
 def save_eqe_data(eqes: list[EQEData], save_dir: Path) -> tuple[NDArray, NDArray]:
     np.savetxt(save_dir / "EQE.txt", eqe := np.stack([eqe.eqe for eqe in eqes]))
-    np.savetxt(save_dir / "EQE_wavelenghts.txt", wavelenghts := eqes[0].wavelengths)
+    np.savetxt(save_dir / "EQE_wavelenghts.txt", wavelenghts := eqes[0].wavelenghts)
 
     return eqe, wavelenghts
 

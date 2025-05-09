@@ -18,15 +18,13 @@ from simulation_tool.jV import (
     preserve_jV_simulation_output,
     run_jV_simulation,
 )
-from simulation_tool.randomization.kf_adapted import randomize_device
+from simulation_tool.randomization.original import randomize_device
 from simulation_tool.session import clean_session, set_up_session
 from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig
 from simulation_tool.utils import save_figure
 
-PATH_TO_SIMSS = Path(
-    "/home/jona/Promotion/Repositories/simsalabim/pySIMsalabim/SIMsalabim/SimSS"
-)
+PATH_TO_SIMSS = Path("/home/ws/gv6569/repos/simsalabim/pySIMsalabim/SIMsalabim/SimSS")
 DPI = 60
 ADJUST_BAND_DIAGRAM_Y_AXIS = True
 WAVE_LENGTH_STEP = NANO  # Used for optical data generation
@@ -202,6 +200,9 @@ def run_parallel(
     num_todo: int = 4,
     randomized: bool = False,
 ):
+    print(f"Number of simulations to run: {num_todo}")
+    print(f"Number of workers: {num_workers}")
+
     parallel = joblib.Parallel(num_workers, return_as="generator")
 
     jobs = [
@@ -218,7 +219,6 @@ def run_parallel(
                 error_count += 1
             outfile.write(f"{idx} {x}\n")
 
-    print(f"Number of runs: {num_todo}")
     print(f"Number of errors: {error_count}")
     print(f"Number of successful runs: {num_todo - error_count}")
     print(
@@ -228,7 +228,7 @@ def run_parallel(
 
 def main():
     simulation_dir = Path.cwd() / "simulation_runs"
-    run_parallel(simulation_dir, num_workers=2, num_todo=20, randomized=True)
+    run_parallel(simulation_dir, num_workers=20, num_todo=20, randomized=True)
 
 
 if __name__ == "__main__":

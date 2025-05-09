@@ -35,7 +35,7 @@ def get_num_points_for_linspace(start: float, stop: float, step: float) -> int:
     return int(round((stop - start) / step)) + 1
 
 
-def wavelength_to_energy(wavelength: float) -> float:
+def wavelenght_to_energy(wavelength: float) -> float:
     """Converts wavelength in meters to energy in eV."""
     energy = (h / e * c) / wavelength
     return energy

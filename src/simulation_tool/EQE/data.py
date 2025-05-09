@@ -10,7 +10,7 @@ from simulation_tool.typing_ import Array1D
 
 @dataclass
 class EQEData:
-    wavelengths: Array1D
+    wavelenghts: Array1D
     eqe: Array1D
 
     @classmethod
@@ -37,7 +37,7 @@ class EQEData:
         plot_EQE(
             ax=ax,
             eqe=self.eqe * 100,
-            wavelengths=self.wavelengths * M_TO_NM,
+            wavelengths=self.wavelenghts * M_TO_NM,
             linewidth=linewidth,
             alpha=alpha,
         )
