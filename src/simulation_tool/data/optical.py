@@ -117,6 +117,7 @@ def _generate_n(wavelenghts: Array1D) -> Array1D:
     means = np.random.random(num_gaussians) * 600 + 200
     sigmas = np.random.random(num_gaussians) * 60 + 10
     alphas = np.random.random(num_gaussians) * 0.5
+    n_offset = np.random.uniform(1.1, 1.8)
 
     n = convolute_gaussians(wavelenghts * M_TO_NM, means, sigmas, alphas)
     n += n_offset
