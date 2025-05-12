@@ -1,3 +1,5 @@
+import numpy as np
+
 from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig
 from simulation_tool.utils import loguniform, randint, randn, uniform
@@ -20,7 +22,9 @@ L2_MOBILITY_RANGE_PEROVSKITE = (5e-9, 1e0)
 L2_MOBILITY_RANGE = (
     1e-8,
     1e-2,
-)  # L2_MOBILITY_RANGE_OPV if OPV else L2_MOBILITY_RANGE_PEROVSKITE
+)
+MOBILITY_EXPONENT_OFFSET = 7.0
+L2_MOBILITY_EXPONENT_OFFSET = 4.0
 
 INTERFACE_C_N_P_RANGE = (1e-15, 1e-11)
 INTERFACE_N_INT_RANGE = (1e14, 1e17)
@@ -74,20 +78,30 @@ def randomize_device(
     return (layer1, layer2, layer3), simss_config
 
 
+def _calculate_layer_factor(l_range: tuple[float, float], layer_L: float) -> float:
+    l_low, l_high = l_range
+    return (np.log(layer_L) - np.log(l_low)) / (np.log(l_high) - np.log(l_low))
+
+
 def _common_randomization(
     layer: Layer,
     l_range: tuple[float, float],
-    mobility_range: tuple[float, float],
+    mobility_exponent_offset: float,
 ) -> Layer:
     layer.L = loguniform(*l_range)
+    layer_factor = _calculate_layer_factor(l_range, layer.L)
     layer.eps_r = randn() + EPS_R_OFFSET
 
     layer.N_c = loguniform(*N_C_RANGE)
     layer.N_D = loguniform(*N_D_A_RANGE)
     layer.N_A = loguniform(*N_D_A_RANGE)
 
-    layer.mobilities.mu_n = loguniform(*mobility_range)
-    layer.mobilities.mu_p = loguniform(*mobility_range)
+    layer.mobilities.mu_n = 10.0 ** (
+        -randn() * 2 - mobility_exponent_offset + layer_factor * 2.0
+    )
+    layer.mobilities.mu_p = 10.0 ** (
+        -randn() * 2.0 - mobility_exponent_offset + layer_factor * 2.0
+    )
 
     layer.interface.N_t_int = loguniform(*INTERFACE_N_INT_RANGE)
     layer.interface.C_n_int = loguniform(*INTERFACE_C_N_P_RANGE)
@@ -119,7 +133,7 @@ def _randomize_layer1(
     layer = _common_randomization(
         layer=layer,
         l_range=L_RANGE,
-        mobility_range=MOBILITY_RANGE,
+        mobility_exponent_offset=MOBILITY_EXPONENT_OFFSET,
     )
 
     return layer
@@ -138,7 +152,7 @@ def _randomize_layer2(
     layer = _common_randomization(
         layer=layer,
         l_range=L2_L_RANGE,
-        mobility_range=L2_MOBILITY_RANGE,
+        mobility_exponent_offset=L2_MOBILITY_EXPONENT_OFFSET,
     )
 
     return layer
@@ -155,7 +169,7 @@ def _randomize_layer3(
     layer = _common_randomization(
         layer=layer,
         l_range=L_RANGE,
-        mobility_range=MOBILITY_RANGE,
+        mobility_exponent_offset=MOBILITY_EXPONENT_OFFSET,
     )
     layer.interface.N_t_int = 0.0  # disables trapping at interface to electrode
 
