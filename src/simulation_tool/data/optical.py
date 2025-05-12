@@ -17,6 +17,7 @@ from simulation_tool.utils import (
 )
 
 USE_KK_CONSISTENT_GENERATION = True
+N_OFFSET_RANGE = (1.1, 1.8)
 
 
 @dataclass
@@ -90,7 +91,9 @@ def plot_optical_data(
 
 
 def standard_generation(
-    min_wavelenght: float, max_wavelenght: float, wavelenght_step: float
+    min_wavelenght: float,
+    max_wavelenght: float,
+    wavelenght_step: float,
 ) -> OpticalData:
     wavelenghts = _generate_wavelenghts(
         min_wavelenght=min_wavelenght,
@@ -117,7 +120,7 @@ def _generate_n(wavelenghts: Array1D) -> Array1D:
     means = np.random.random(num_gaussians) * 600 + 200
     sigmas = np.random.random(num_gaussians) * 60 + 10
     alphas = np.random.random(num_gaussians) * 0.5
-    n_offset = np.random.uniform(1.1, 1.8)
+    n_offset = np.random.uniform(*N_OFFSET_RANGE)
 
     n = convolute_gaussians(wavelenghts * M_TO_NM, means, sigmas, alphas)
     n += n_offset
@@ -172,7 +175,8 @@ def kramers_kronig_consistent_generation(
     )
     k, bandgap = _generate_k(wavelenghts)
 
-    n = _kk_hilbert_n_from_k(wavelenghts, k, n_offset=1.5)
+    n_offset = np.random.uniform(*N_OFFSET_RANGE)
+    n = _kk_hilbert_n_from_k(wavelenghts, k, n_offset=n_offset)
     return OpticalData(
         wavelenghts=wavelenghts,
         n=n,
@@ -186,7 +190,9 @@ def _wavelenghts_to_omega(wavelenghts: Array1D) -> Array1D:
 
 
 def _kk_hilbert_n_from_k(
-    wavelenghts: Array1D, k: Array1D, n_offset: float = 1.5
+    wavelenghts: Array1D,
+    k: Array1D,
+    n_offset: float = 1.5,
 ) -> Array1D:
     """
     Compute n(λ) from k(λ) using the Kramers–Kronig relation via Hilbert transform.
