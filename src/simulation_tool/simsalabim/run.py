@@ -1,7 +1,7 @@
 from pathlib import Path
 from subprocess import run
 
-from simulation_tool.exceptions import SimulationError
+from simulation_tool.exceptions import DeviceParametersIncompleteError, SimulationError
 
 
 def construct_command(
@@ -62,7 +62,7 @@ def run_simulation(
         )
 
     if not scPars_file.exists():
-        return SimulationError(
+        return DeviceParametersIncompleteError(
             message="Simulation did not produce the expected output files. Missing file: scPars.dat",
         )
 

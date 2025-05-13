@@ -1,1 +1,1 @@
-from simulation_tool.exceptions import SimulationError
+from simulation_tool.exceptions import DeviceParametersIncompleteError, SimulationError

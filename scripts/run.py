@@ -1,3 +1,4 @@
+import os
 from dataclasses import asdict
 from pathlib import Path
 
@@ -5,7 +6,7 @@ import joblib
 import numpy as np
 
 import simulation_tool.templates.to_text as to_text
-from simulation_tool import SimulationError
+from simulation_tool import DeviceParametersIncompleteError, SimulationError
 from simulation_tool.constants import NANO, RUN_DIR_PREFIX
 from simulation_tool.data import BandDiagramData, OpticalData
 from simulation_tool.EQE import (
@@ -138,6 +139,9 @@ def run_simulations(
         session_path=session_path,
     )
 
+    if isinstance(simulation_result, DeviceParametersIncompleteError):
+        return f"ERROR {simulation_result}"
+
     simulation_result = run_EQE_simulation(
         session_path=session_path,
         setup_file=setup_file,
@@ -227,7 +231,8 @@ def run_parallel(
 
 
 def main():
-    simulation_dir = Path.cwd() / "simulation_runs"
+    identifier = os.getenv("SLURM_JOB_ID", "")
+    simulation_dir = Path.cwd() / "simulation_runs" / identifier
     run_parallel(simulation_dir, num_workers=20, num_todo=20, randomized=True)
 
 
