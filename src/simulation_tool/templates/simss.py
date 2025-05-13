@@ -220,9 +220,3 @@ class SimssConfig(JSONSerializable):
             **self.contacts.numeric_parameters(),
             **self.optics.numeric_parameters(),
         }
-
-
-sims = SimssConfig.from_session(
-    session_path=Path("/path/to/session"),
-    path_to_simss=Path("/path/to/simss"),
-)
