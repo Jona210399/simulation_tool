@@ -162,8 +162,9 @@ def run(
     simulation_dir: Path,
     process_id: int,
     randomized: bool,
+    random_seed: int,
 ) -> str:
-    np.random.seed(process_id)
+    np.random.seed(random_seed)
     session_path = simulation_dir / f"{RUN_DIR_PREFIX}_{process_id}"
     set_up_session(
         path_to_executable=PATH_TO_SIMSS / "simss",
@@ -208,9 +209,15 @@ def run_parallel(
     print(f"Number of workers: {num_workers}")
 
     parallel = joblib.Parallel(num_workers, return_as="generator")
+    random_seed = int(os.getenv("SLURM_JOB_ID", 0))
 
     jobs = [
-        joblib.delayed(run)(simulation_dir, process_id, randomized)
+        joblib.delayed(run)(
+            simulation_dir,
+            process_id,
+            randomized,
+            random_seed + process_id,
+        )
         for process_id in range(num_todo)
     ]
 
