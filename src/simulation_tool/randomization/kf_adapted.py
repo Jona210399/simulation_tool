@@ -26,8 +26,10 @@ L2_MOBILITY_RANGE = (
 MOBILITY_EXPONENT_OFFSET = 7.0
 L2_MOBILITY_EXPONENT_OFFSET = 4.0
 
-INTERFACE_C_N_P_RANGE = (1e-15, 1e-11)
-INTERFACE_N_INT_RANGE = (1e14, 1e17)
+"""Interface trapping depends on the product of C_n/p and N_t_int. So only
+one of them needs to be randomized. The other one can be set to 1.0. Interface trap energies need to be in between the energy levels of the interfacing layers."""
+INTERFACE_C_N_P = 1.0
+INTERFACE_N_INT_RANGE = (1e-5, 1e2)
 INTERFACE_E_T_INT_OFFSET = 0.05
 
 L2_KF_RANGE = (1e4, 1e8)
@@ -102,10 +104,9 @@ def _common_randomization(
     layer.mobilities.mu_p = 10.0 ** (
         -randn() * 2.0 - mobility_exponent_offset + layer_factor * 2.0
     )
-
     layer.interface.N_t_int = loguniform(*INTERFACE_N_INT_RANGE)
-    layer.interface.C_n_int = loguniform(*INTERFACE_C_N_P_RANGE)
-    layer.interface.C_p_int = loguniform(*INTERFACE_C_N_P_RANGE)
+    layer.interface.C_n_int = INTERFACE_C_N_P
+    layer.interface.C_p_int = INTERFACE_C_N_P
     layer.interface.intTrapType = randint(-1, 2)
 
     layer.bulk.N_t_bulk = loguniform(*BULK_N_T_RANGE)
@@ -188,10 +189,12 @@ def _randomize_simss_config(
 
     simss_config.contacts.W_L = w_l
     simss_config.contacts.W_R = w_r
-    simss_config.contacts.R_shunt = loguniform(*R_SHUNT_RANGE)
-    simss_config.contacts.R_series = loguniform(*R_SERIES_RANGE)
+    # simss_config.contacts.R_shunt = loguniform(*R_SHUNT_RANGE)
+    # simss_config.contacts.R_series = loguniform(*R_SERIES_RANGE)
 
     simss_config.optics.L_TCO = loguniform(*L_TCO_RANGE)
     simss_config.optics.L_BE = loguniform(*L_BE_RANGE)
+
+    simss_config.numerical.maxItSS *= 2.0
 
     return simss_config
