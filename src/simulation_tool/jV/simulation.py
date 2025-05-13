@@ -2,7 +2,7 @@ import shutil
 from pathlib import Path
 
 from simulation_tool.data import AbsorptionCoefficientData, ElectricFieldData, UVVisData
-from simulation_tool.exceptions import SimulationError
+from simulation_tool.exceptions import DeviceParametersIncompleteError, SimulationError
 from simulation_tool.jV.data import JVData
 from simulation_tool.simsalabim.run import run_simulation
 from simulation_tool.utils import save_figure
@@ -19,7 +19,7 @@ def run_jV_simulation(
         session_path=session_path,
     )
 
-    if isinstance(result, SimulationError):
+    if isinstance(result, (SimulationError, DeviceParametersIncompleteError)):
         return result
 
     files_to_check = [
@@ -76,10 +76,13 @@ def create_jV_simulation_plots(
 def preserve_jV_simulation_output(
     session_path: Path,
 ):
-    shutil.copy(
-        session_path / "scPars.dat",
-        session_path / "device_characteristics.txt",
-    )
+    device_characteristics_file = session_path / "scPars.dat"
+    if device_characteristics_file.exists():
+        shutil.copy(
+            session_path / "scPars.dat",
+            session_path / "device_characteristics.txt",
+        )
+
     shutil.move(
         session_path / "JV.dat",
         session_path / "jV.txt",
