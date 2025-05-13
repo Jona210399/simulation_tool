@@ -1,4 +1,3 @@
-import os
 import shutil
 from pathlib import Path
 
@@ -49,14 +48,15 @@ def clean_session(
     if not session_path.exists():
         return
 
+    (session_path / simss_config.ui.logFile).unlink(missing_ok=True)
+
     collect_session_plots(session_path)
     collect_session_data(session_path)
 
-    if (session_path / simss_config.ui.varFile).exists():
-        os.remove(session_path / simss_config.ui.varFile)
-
-    if (simss_config.setup_file).exists():
-        os.remove(simss_config.setup_file)
+    (session_path / simss_config.ui.varFile).unlink(missing_ok=True)
+    simss_config.setup_file.unlink(missing_ok=True)
+    (session_path / simss_config.ui.JVFile).unlink(missing_ok=True)
+    (session_path / simss_config.ui.scParsFile).unlink(missing_ok=True)
 
     layer_files = [
         simss_config.layers.l1,
@@ -65,7 +65,6 @@ def clean_session(
     ]
 
     for layer_file in layer_files:
-        if layer_file.exists():
-            os.remove(layer_file)
+        layer_file.unlink(missing_ok=True)
 
     sim.delete_folders("tmp", session_path)
