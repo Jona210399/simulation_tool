@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+import numpy as np
 import polars as pl
 from matplotlib.axes import Axes
 
@@ -20,18 +21,23 @@ class JVData:
         device_characteristics_file: PathLike,
         jv_file: PathLike,
     ) -> "JVData":
-        device_characteristics = pl.read_csv(
-            device_characteristics_file,
-            separator=" ",
-        )
+        if device_characteristics_file.exists():
+            device_characteristics = pl.read_csv(
+                device_characteristics_file,
+                separator=" ",
+            )
+            jsc, voc, ff = (
+                device_characteristics["Jsc"].item(),
+                device_characteristics["Voc"].item(),
+                device_characteristics["FF"].item(),
+            )
+
+        else:
+            voc = np.nan
+            jsc = np.nan
+            ff = np.nan
 
         jv_data = pl.read_csv(jv_file, separator=" ", truncate_ragged_lines=True)
-
-        jsc, voc, ff = (
-            device_characteristics["Jsc"].item(),
-            device_characteristics["Voc"].item(),
-            device_characteristics["FF"].item(),
-        )
 
         return cls(
             jv_data["Vext"].to_numpy(),
