@@ -3,7 +3,8 @@ from pathlib import Path
 
 from simulation_tool.constants import SET_UP_FILE
 from simulation_tool.templates.serializeable import JSONSerializable
-from simulation_tool.typing_ import PathLike
+
+ADDITIONAL_FILES_DIR = Path(__file__).parent.parent / "additional_files"
 
 
 @dataclass
@@ -63,16 +64,16 @@ class Optics:
     lambda_max: float
 
     @classmethod
-    def get_default(cls, path_to_simss: PathLike) -> "Optics":
+    def get_default(cls) -> "Optics":
         return cls(
             G_frac=1.0,
             genProfile="calc",
             L_TCO=1.1e-7,
             L_BE=2e-7,
-            nkSubstrate=f"{path_to_simss}/../Data/nk_SiO2.txt",
-            nkTCO=f"{path_to_simss}/../Data/nk_ITO.txt",
-            nkBE=f"{path_to_simss}/../Data/nk_Al.txt",
-            spectrum=path_to_simss / "../Data/AM15G.txt",
+            nkSubstrate=str(ADDITIONAL_FILES_DIR / "nk_SiO2.txt"),
+            nkTCO=str(ADDITIONAL_FILES_DIR / "nk_ITO.txt"),
+            nkBE=str(ADDITIONAL_FILES_DIR / "nk_Al.txt"),
+            spectrum=ADDITIONAL_FILES_DIR / "AM15G.txt",
             lambda_min=3.5e-7,
             lambda_max=8e-7,
         )
@@ -202,14 +203,13 @@ class SimssConfig(JSONSerializable):
     def from_session(
         cls,
         session_path: Path,
-        path_to_simss: Path,
     ) -> "SimssConfig":
         return cls(
             T=295.0,
             setup_file=session_path / SET_UP_FILE,
             layers=LayerFiles.from_session_path(session_path),
             contacts=Contacts.get_default(),
-            optics=Optics.get_default(path_to_simss),
+            optics=Optics.get_default(),
             numerical=Numerical.get_default(),
             voltage=VoltageRange.get_default(),
             ui=UserInterface.get_default(),

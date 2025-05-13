@@ -25,7 +25,9 @@ from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig
 from simulation_tool.utils import save_figure
 
-PATH_TO_SIMSS = Path("/home/ws/gv6569/repos/simsalabim/pySIMsalabim/SIMsalabim/SimSS")
+PATH_TO_SIMSS_EXECUTABLE = Path(
+    "/home/ws/gv6569/repos/simsalabim/pySIMsalabim/SIMsalabim/SimSS/simss"
+)
 DPI = 60
 ADJUST_BAND_DIAGRAM_Y_AXIS = True
 WAVE_LENGTH_STEP = NANO  # Used for optical data generation
@@ -34,15 +36,14 @@ LAMBDA_STEP = 10 * NANO  # Used for EQE simulation
 
 def create_layer_stack(
     session_path: Path,
-    path_to_simss: Path,
     bandgap: float,
 ) -> tuple[Layer, Layer, Layer]:
-    layer1 = Layer.get_default_layer1(path_to_simss=path_to_simss)
+    layer1 = Layer.get_default_layer1()
     layer2 = Layer.get_default_layer2(
         session_path=session_path,
         bandgap=bandgap,
     )
-    layer3 = Layer.get_default_layer3(path_to_simss=path_to_simss)
+    layer3 = Layer.get_default_layer3()
 
     return layer1, layer2, layer3
 
@@ -71,13 +72,9 @@ def write_simulation_input_files(
 
 def prepare_simulation(
     session_path: Path,
-    path_to_simss: Path,
     randomized: bool,
 ) -> SimssConfig:
-    simss_config = SimssConfig.from_session(
-        session_path=session_path,
-        path_to_simss=path_to_simss,
-    )
+    simss_config = SimssConfig.from_session(session_path=session_path)
 
     optical_data = OpticalData.new(
         min_wavelenght=simss_config.optics.lambda_min,
@@ -90,7 +87,6 @@ def prepare_simulation(
 
     layers = create_layer_stack(
         session_path=session_path,
-        path_to_simss=path_to_simss,
         bandgap=optical_data.bandgap,
     )
 
@@ -167,13 +163,12 @@ def run(
     np.random.seed(random_seed)
     session_path = simulation_dir / f"{RUN_DIR_PREFIX}_{process_id}"
     set_up_session(
-        path_to_executable=PATH_TO_SIMSS / "simss",
+        path_to_executable=PATH_TO_SIMSS_EXECUTABLE,
         session_path=session_path,
     )
 
     smiss_config = prepare_simulation(
         session_path=session_path,
-        path_to_simss=PATH_TO_SIMSS,
         randomized=randomized,
     )
 
@@ -186,7 +181,7 @@ def run(
 
     result = run_simulations(
         session_path=session_path,
-        path_to_executable=PATH_TO_SIMSS / "simss",
+        path_to_executable=PATH_TO_SIMSS_EXECUTABLE,
         setup_file=smiss_config.setup_file,
         eqe_parameters=eqe_parameters,
     )

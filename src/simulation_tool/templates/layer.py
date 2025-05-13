@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 from simulation_tool.templates.serializeable import JSONSerializable
 from simulation_tool.typing_ import PathLike
+
+ADDITIONAL_FILES_DIR = Path(__file__).parent.parent / "additional_files"
 
 
 @dataclass
@@ -214,7 +217,7 @@ class Layer(JSONSerializable):
         }
 
     @classmethod
-    def get_default_layer1(cls, path_to_simss: PathLike) -> "Layer":
+    def get_default_layer1(cls) -> "Layer":
         layer = cls.get_default()
 
         layer.L = 3e-8
@@ -233,7 +236,7 @@ class Layer(JSONSerializable):
 
         layer.generation.G_ehp = 0.0
         layer.generation.layerGen = 0
-        layer.generation.nkLayer = f"{path_to_simss}/../Data/nk_PEDOT.txt"
+        layer.generation.nkLayer = str(ADDITIONAL_FILES_DIR / "nk_PEDOT.txt")
         layer.bulk.N_t_bulk = 0.0
 
         return layer
@@ -265,7 +268,7 @@ class Layer(JSONSerializable):
         return layer
 
     @classmethod
-    def get_default_layer3(cls, path_to_simss: PathLike) -> "Layer":
+    def get_default_layer3(cls) -> "Layer":
         layer = cls.get_default()
 
         layer.L = 3e-8
@@ -284,7 +287,7 @@ class Layer(JSONSerializable):
 
         layer.generation.G_ehp = 0.0
         layer.generation.layerGen = 0
-        layer.generation.nkLayer = f"{path_to_simss}/../Data/nk_Ca.txt"
+        layer.generation.nkLayer = str(ADDITIONAL_FILES_DIR / "nk_Ca.txt")
 
         layer.bulk.N_t_bulk = 0.0
 
