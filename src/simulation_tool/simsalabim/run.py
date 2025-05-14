@@ -1,6 +1,7 @@
 from pathlib import Path
-from subprocess import run
+from subprocess import TimeoutExpired, run
 
+from simulation_tool.constants import SIMULATION_TIMEOUT
 from simulation_tool.exceptions import DeviceParametersIncompleteError, SimulationError
 
 
@@ -47,14 +48,20 @@ def run_simulation(
 
     with open(stdout, "w") as stdout_file:
         with open(stderr, "w") as stderr_file:
-            result = run(
-                cmd_line,
-                cwd=session_path,
-                stdout=stdout_file,
-                stderr=stderr_file,
-                check=False,
-                shell=True,
-            )
+            try:
+                result = run(
+                    cmd_line,
+                    cwd=session_path,
+                    stdout=stdout_file,
+                    stderr=stderr_file,
+                    check=False,
+                    shell=True,
+                    timeout=SIMULATION_TIMEOUT,
+                )
+            except TimeoutExpired:
+                return SimulationError(
+                    message="Simulation timed out. Check the output files for more details.",
+                )
 
     if result.returncode != 0:
         return SimulationError(
