@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-from pathlib import Path
 
 import matplotlib.patches as patches
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 
-from simulation_tool.constants import M_TO_NM
+from simulation_tool.constants import ADJUST_BAND_DIAGRAM_Y_AXIS, M_TO_NM
 from simulation_tool.templates.layer import Layer
 
 
@@ -33,23 +32,19 @@ class BandDiagramData:
         E_vs = [layer.E_v for layer in layers]
         return cls(W_L, W_R, L_TCO, L_BE, Ls, E_cs, E_vs)
 
-    def plot(self, dpi: int, adjust_y_axis: bool, save_path: Path = Path(".")):
+    def plot(self, ax: Axes, adjust_y_axis: bool = ADJUST_BAND_DIAGRAM_Y_AXIS):
         plot_band_diagram(
-            self,
-            dpi=dpi,
+            ax=ax,
+            data=self,
             adjust_y_axis=adjust_y_axis,
-            save_path=save_path,
         )
 
 
 def plot_band_diagram(
+    ax: Axes,
     data: BandDiagramData,
-    dpi: int,
     adjust_y_axis: bool,
-    save_path: Path = Path("."),
 ):
-    _, ax = plt.subplots(figsize=(10, 6))
-
     widths = np.array([data.L_TCO] + data.Ls + [data.L_BE]) * M_TO_NM
     E_cs = [data.W_L] + data.E_cs + [data.W_R]
     E_vs = [None] + data.E_vs + [None]
@@ -115,11 +110,8 @@ def plot_band_diagram(
     y_min = min(E_cs) - 0.5 if adjust_y_axis else 1.0
     y_max = max(data.E_vs) + 0.5 if adjust_y_axis else 7.0
 
-    plt.xlabel("Distance [nm]")
-    plt.ylabel("Energy [eV]")
-    plt.title("Solar Cell Band Diagram")
-    plt.xlim(-0.1 * x_position, x_position + 0.1 * x_position)
-    plt.ylim(y_min, y_max)
-    plt.tight_layout()
-    plt.savefig(f"{save_path}/band_diagram.png", dpi=dpi)
-    plt.close()
+    ax.set_xlabel("Distance [nm]")
+    ax.set_ylabel("Energy [eV]")
+    ax.set_title("Solar Cell Band Diagram")
+    ax.set_xlim(-0.1 * x_position, x_position + 0.1 * x_position)
+    ax.set_ylim(y_min, y_max)
