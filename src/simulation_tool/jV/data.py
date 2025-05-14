@@ -99,7 +99,6 @@ def plot_jV(
 
     ax.axhline(0, color="k", linestyle="--")
     ax.axvline(0, color="k", linestyle="--")
-    ax.set_ylim([-200, 200])
 
     if label:
         ax.legend(loc="upper left")
