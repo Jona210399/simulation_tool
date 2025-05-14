@@ -1,6 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from pathlib import Path
 
-import numpy as np
+import polars as pl
 from matplotlib.axes import Axes
 
 from simulation_tool.constants import M_TO_NM
@@ -13,11 +14,32 @@ class ElectricFieldData:
     x: Array1D
 
     @classmethod
-    def from_file(cls, file_path: str) -> "ElectricFieldData":
-        data = np.loadtxt(file_path)
-        x = data[:, 0]
-        electric_field = data[:, 1]
-        return cls(electric_field, x)
+    def from_file(cls, file_path: Path) -> "ElectricFieldData":
+        if file_path.suffix == ".parquet":
+            data = pl.read_parquet(source=file_path)
+            return cls(
+                electric_field=data[:, 0].to_numpy(),
+                x=data[:, 1].to_numpy(),
+            )
+        data = pl.read_csv(
+            file_path,
+            separator=" ",
+            has_header=False,
+        )
+        return cls(
+            electric_field=data[:, 1].to_numpy(),
+            x=data[:, 0].to_numpy(),
+        )
+
+    def to_parquet(
+        self,
+        save_dir: Path,
+        dtype: pl.DataType = pl.Float32,
+    ):
+        save_location = save_dir / "E_of_x.parquet"
+        pl.DataFrame(asdict(self)).with_columns([pl.all().cast(dtype)]).write_parquet(
+            file=save_location
+        )
 
     def plot(
         self,
