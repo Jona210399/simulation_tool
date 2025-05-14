@@ -39,18 +39,18 @@ class OpticalData:
         k = data["k"].to_numpy()
         return cls(wavelenghts, n, k)
 
-    def save(self, save_path: Path):
-        save_location = save_path / "nk.txt"
+    def save(self, save_dir: Path):
+        save_location = save_dir / "nk.txt"
         pl.DataFrame(self.to_saveable_dict()).write_csv(
             file=save_location, separator=" "
         )
 
     def to_parquet(
         self,
-        save_path: Path,
+        save_dir: Path,
         dtype: pl.DataType = pl.Float32,
     ):
-        save_location = save_path / "nk.parquet"
+        save_location = save_dir / "nk.parquet"
         pl.DataFrame(self.to_saveable_dict()).with_columns(
             [pl.all().cast(dtype)]
         ).write_parquet(file=save_location)
