@@ -10,25 +10,23 @@ from simulation_tool.typing_ import Array1D
 
 @dataclass
 class ElectricFieldData:
-    electric_field: Array1D
     x: Array1D
+    electric_field: Array1D
 
     @classmethod
     def from_file(cls, file_path: Path) -> "ElectricFieldData":
         if file_path.suffix == ".parquet":
             data = pl.read_parquet(source=file_path)
-            return cls(
-                electric_field=data[:, 0].to_numpy(),
-                x=data[:, 1].to_numpy(),
+        else:
+            data = pl.read_csv(
+                file_path,
+                separator=" ",
+                has_header=False,
             )
-        data = pl.read_csv(
-            file_path,
-            separator=" ",
-            has_header=False,
-        )
+
         return cls(
-            electric_field=data[:, 1].to_numpy(),
             x=data[:, 0].to_numpy(),
+            electric_field=data[:, 1].to_numpy(),
         )
 
     def to_parquet(
