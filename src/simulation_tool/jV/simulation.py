@@ -52,13 +52,13 @@ def create_jV_simulation_plots(
     )
 
     save_figure(
-        ElectricFieldData.from_file(f"{session_path}/E_of_x.txt"),
+        ElectricFieldData.from_file(session_path / "E_of_x.txt"),
         save_path=session_path / "E_of_x.png",
         dpi=dpi,
     )
 
     save_figure(
-        AbsorptionCoefficientData.from_file(f"{session_path}/alpha_of_x.txt"),
+        AbsorptionCoefficientData.from_file(session_path / "alpha_of_x.txt"),
         save_path=session_path / "alpha_of_x.png",
         dpi=dpi,
     )
