@@ -28,8 +28,12 @@ class OpticalData:
     bandgap: float = None
 
     @classmethod
-    def from_file(cls, file_path: str) -> "OpticalData":
-        data = pl.read_csv(file_path, separator=" ", truncate_ragged_lines=True)
+    def from_file(cls, file_path: Path) -> "OpticalData":
+        if file_path.suffix == ".parquet":
+            data = pl.read_parquet(source=file_path)
+        else:
+            data = pl.read_csv(file_path, separator=" ", truncate_ragged_lines=True)
+
         wavelenghts = data["lambda"].to_numpy()
         n = data["n"].to_numpy()
         k = data["k"].to_numpy()
@@ -40,6 +44,16 @@ class OpticalData:
         pl.DataFrame(self.to_saveable_dict()).write_csv(
             file=save_location, separator=" "
         )
+
+    def to_parquet(
+        self,
+        save_path: Path,
+        dtype: pl.DataType = pl.Float32,
+    ):
+        save_location = save_path / "nk.parquet"
+        pl.DataFrame(self.to_saveable_dict()).with_columns(
+            [pl.all().cast(dtype)]
+        ).write_parquet(file=save_location)
 
     @classmethod
     def new(
