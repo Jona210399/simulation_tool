@@ -1,10 +1,8 @@
 from dataclasses import dataclass
-from pathlib import Path
 
+from simulation_tool.constants import ADDITIONAL_FILES_DIR
 from simulation_tool.templates.serializeable import JSONSerializable
 from simulation_tool.typing_ import PathLike
-
-ADDITIONAL_FILES_DIR = Path(__file__).parent.parent / "additional_files"
 
 
 @dataclass

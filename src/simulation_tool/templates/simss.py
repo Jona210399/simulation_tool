@@ -1,10 +1,8 @@
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from simulation_tool.constants import SET_UP_FILE
+from simulation_tool.constants import ADDITIONAL_FILES_DIR, SET_UP_FILE
 from simulation_tool.templates.serializeable import JSONSerializable
-
-ADDITIONAL_FILES_DIR = Path(__file__).parent.parent / "additional_files"
 
 
 @dataclass
