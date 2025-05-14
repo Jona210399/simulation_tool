@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pySIMsalabim as sim
 
+from simulation_tool.constants import PLOTTING_ENABLED
 from simulation_tool.templates.simss import SimssConfig
 
 
@@ -19,6 +20,8 @@ def set_up_session(
 
 
 def collect_session_plots(session_path: Path):
+    if not PLOTTING_ENABLED:
+        return
     plots_dir = session_path / "plots"
     plots_dir.mkdir(exist_ok=True)
 

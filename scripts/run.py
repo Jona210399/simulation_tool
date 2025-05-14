@@ -1,5 +1,6 @@
 import os
 from dataclasses import asdict
+from datetime import datetime
 from pathlib import Path
 
 import joblib
@@ -7,7 +8,16 @@ import numpy as np
 
 import simulation_tool.templates.to_text as to_text
 from simulation_tool import DeviceParametersIncompleteError, SimulationError
-from simulation_tool.constants import NANO, RUN_DIR_PREFIX
+from simulation_tool.constants import (
+    DPI,
+    LAMBDA_STEP,
+    NUM_TODO,
+    ORIGINAL_RANDOMIZATION,
+    PATH_TO_SIMSS_EXECUTABLE,
+    PLOTTING_ENABLED,
+    RUN_DIR_PREFIX,
+    WAVE_LENGTH_STEP,
+)
 from simulation_tool.data import BandDiagramData, OpticalData
 from simulation_tool.EQE import (
     EQEParameters,
@@ -19,19 +29,21 @@ from simulation_tool.jV import (
     preserve_jV_simulation_output,
     run_jV_simulation,
 )
-from simulation_tool.randomization.original import randomize_device
-from simulation_tool.session import clean_session, set_up_session
+from simulation_tool.randomization.kf_adapted import (
+    randomize_device as randomize_device_kf_adapted,  # noqa: F401
+)
+from simulation_tool.randomization.original import (
+    randomize_device as randomize_device_original,
+)
+from simulation_tool.session import clean_session, delete_session, set_up_session
 from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig
+from simulation_tool.ui.progress_bar import joblib_progress_to_file
 from simulation_tool.utils import save_figure
 
-PATH_TO_SIMSS_EXECUTABLE = Path(
-    "/home/ws/gv6569/repos/simsalabim/pySIMsalabim/SIMsalabim/SimSS/simss"
+randomize_device = (
+    randomize_device_original if ORIGINAL_RANDOMIZATION else randomize_device_kf_adapted
 )
-DPI = 60
-ADJUST_BAND_DIAGRAM_Y_AXIS = True
-WAVE_LENGTH_STEP = NANO  # Used for optical data generation
-LAMBDA_STEP = 10 * NANO  # Used for EQE simulation
 
 
 def create_layer_stack(
@@ -82,7 +94,6 @@ def prepare_simulation(
         wavelenght_step=WAVE_LENGTH_STEP,
     )
 
-    save_figure(optical_data, save_path=session_path / "nk.png", dpi=DPI)
     optical_data.save(session_path)
 
     layers = create_layer_stack(
@@ -97,17 +108,20 @@ def prepare_simulation(
 
     write_simulation_input_files(simss_config, layers)
 
-    BandDiagramData.from_layers(
-        W_L=simss_config.contacts.W_L,
-        W_R=simss_config.contacts.W_R,
-        L_TCO=simss_config.optics.L_TCO,
-        L_BE=simss_config.optics.L_BE,
-        layers=layers,
-    ).plot(
-        dpi=DPI,
-        adjust_y_axis=ADJUST_BAND_DIAGRAM_Y_AXIS,
-        save_path=session_path,
-    )
+    if PLOTTING_ENABLED:
+        save_figure(optical_data, save_path=session_path / "nk.png", dpi=DPI)
+
+        save_figure(
+            BandDiagramData.from_layers(
+                W_L=simss_config.contacts.W_L,
+                W_R=simss_config.contacts.W_R,
+                L_TCO=simss_config.optics.L_TCO,
+                L_BE=simss_config.optics.L_BE,
+                layers=layers,
+            ),
+            save_path=session_path / "band_diagram.png",
+            dpi=DPI,
+        )
 
     return simss_config
 
@@ -124,13 +138,14 @@ def run_simulations(
         path_to_executable=path_to_executable,
     )
     if isinstance(simulation_result, SimulationError):
-        # delete_session(session_path)
+        delete_session(session_path)
         return f"ERROR {simulation_result}"
 
-    create_jV_simulation_plots(
-        session_path=session_path,
-        dpi=DPI,
-    )
+    if PLOTTING_ENABLED:
+        create_jV_simulation_plots(
+            session_path=session_path,
+            dpi=DPI,
+        )
     preserve_jV_simulation_output(
         session_path=session_path,
     )
@@ -146,10 +161,11 @@ def run_simulations(
     )
 
     if isinstance(simulation_result, SimulationError):
-        # delete_session(session_path)
+        delete_session(session_path)
         return f"ERROR {simulation_result}"
 
-    create_EQE_simulation_plots(session_path=session_path, dpi=DPI)
+    if PLOTTING_ENABLED:
+        create_EQE_simulation_plots(session_path=session_path, dpi=DPI)
 
     return "DONE"
 
@@ -203,7 +219,6 @@ def run_parallel(
     print(f"Number of simulations to run: {num_todo}")
     print(f"Number of workers: {num_workers}")
 
-    parallel = joblib.Parallel(num_workers, return_as="generator")
     random_seed = int(os.getenv("SLURM_JOB_ID", 0))
 
     jobs = [
@@ -216,7 +231,12 @@ def run_parallel(
         for process_id in range(num_todo)
     ]
 
-    results: list[str] = list(parallel(jobs))
+    with joblib_progress_to_file(
+        simulation_dir=simulation_dir,
+        total=num_todo,
+        description="Running simulations",
+    ):
+        results: list[str] = joblib.Parallel(n_jobs=num_workers)(jobs)
 
     error_count = 0
     with open(simulation_dir / "results.txt", "w") as outfile:
@@ -235,7 +255,19 @@ def run_parallel(
 def main():
     identifier = os.getenv("SLURM_JOB_ID", "")
     simulation_dir = Path.cwd() / "simulation_runs" / identifier
-    run_parallel(simulation_dir, num_workers=20, num_todo=20, randomized=True)
+    num_workers = os.getenv("SLURM_CPUS_PER_TASK", 20)
+
+    start = datetime.now()
+    print(f"Simulation started at: {start}")
+    run_parallel(
+        simulation_dir,
+        num_workers=num_workers,
+        num_todo=NUM_TODO,
+        randomized=True,
+    )
+    end = datetime.now()
+    print(f"Simulation ended at: {end}")
+    print(f"Total time: {end - start}")
 
 
 if __name__ == "__main__":
