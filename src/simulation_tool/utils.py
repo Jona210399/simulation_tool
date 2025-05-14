@@ -86,5 +86,6 @@ class Plotable(Protocol):
 def save_figure(plotable: Plotable, save_path: Path, dpi: int, **kwargs) -> None:
     fig, ax = plt.subplots()
     plotable.plot(ax=ax, **kwargs)
+    plt.tight_layout()
     plt.savefig(save_path, dpi=dpi)
     plt.close(fig)
