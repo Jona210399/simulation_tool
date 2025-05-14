@@ -42,8 +42,8 @@ def run_simulation(
         cmd_pars=cmd_pars,
     )
 
-    stdout = session_path / "stdout.txt"
-    stderr = session_path / "stderr.txt"
+    stdout = session_path / "stdout.out"
+    stderr = session_path / "stderr.out"
     scPars_file = session_path / "scPars.dat"
 
     with open(stdout, "w") as stdout_file:
