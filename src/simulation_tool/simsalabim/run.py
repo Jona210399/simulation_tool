@@ -42,8 +42,8 @@ def run_simulation(
         cmd_pars=cmd_pars,
     )
 
-    stdout = session_path / "stdout.out"
-    stderr = session_path / "stderr.out"
+    stdout = session_path / "sim.out"
+    stderr = session_path / "sim.err"
     scPars_file = session_path / "scPars.dat"
 
     with open(stdout, "w") as stdout_file:
@@ -65,7 +65,7 @@ def run_simulation(
 
     if result.returncode != 0:
         return SimulationError(
-            message=f"Simulation failed with return code {result.returncode}. Check the output files for more details. Error",
+            message=f"Simulation failed with return code {result.returncode}. Check the output files {stdout.name} and {stderr.name} for more details.",
         )
 
     if not scPars_file.exists():
