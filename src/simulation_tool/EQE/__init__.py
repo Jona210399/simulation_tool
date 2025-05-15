@@ -1,6 +1,5 @@
-from simulation_tool.EQE.data import EQEData
-from simulation_tool.EQE.simulation import (
+from simulation_tool.EQE.data import EQEData  # noqa: F401
+from simulation_tool.EQE.simulation import (  # noqa: F401
     EQEParameters,
-    create_EQE_simulation_plots,
     run_EQE_simulation,
 )
