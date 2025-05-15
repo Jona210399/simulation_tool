@@ -11,6 +11,7 @@ from scipy.signal import hilbert
 from simulation_tool.constants import (
     M_TO_NM,
     N_OFFSET_RANGE,
+    NK_FILE_NAME,
     NM_TO_M,
     USE_KK_CONSISTENT_GENERATION,
 )
@@ -42,7 +43,7 @@ class OpticalData:
         return cls(wavelenghts, n, k)
 
     def save(self, save_dir: Path):
-        save_location = save_dir / "nk.txt"
+        save_location = save_dir / NK_FILE_NAME
         pl.DataFrame(self.to_saveable_dict()).write_csv(
             file=save_location, separator=" "
         )
@@ -52,7 +53,7 @@ class OpticalData:
         save_dir: Path,
         dtype: pl.DataType = pl.Float32,
     ):
-        save_location = save_dir / "nk.parquet"
+        save_location = (save_dir / NK_FILE_NAME).with_suffix(".parquet")
         pl.DataFrame(self.to_saveable_dict()).with_columns(
             [pl.all().cast(dtype)]
         ).write_parquet(file=save_location)
