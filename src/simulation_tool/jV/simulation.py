@@ -1,89 +1,111 @@
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
 
 from simulation_tool.data import AbsorptionCoefficientData, ElectricFieldData, UVVisData
 from simulation_tool.exceptions import DeviceParametersIncompleteError, SimulationError
 from simulation_tool.jV.data import JVData
-from simulation_tool.simsalabim.run import run_simulation
-from simulation_tool.utils import save_figure
+from simulation_tool.simsalabim.run import clean_up_simulation_output, run_simulation
+from simulation_tool.templates.simss import SimssOutputFiles, UserInterface
+from simulation_tool.utils import Plotable, save_figure
+
+
+@dataclass
+class JVSimulationOutput:
+    uvvis: UVVisData
+    electric_field: ElectricFieldData
+    absorption_coefficient: AbsorptionCoefficientData
+    jv: JVData
 
 
 def run_jV_simulation(
     session_path: Path,
-    setup_file: Path,
     path_to_executable: Path,
-) -> None | SimulationError:
+    simss_ui: UserInterface,
+    setup_file: Path,
+    plot_output: bool,
+    plot_dpi: int,
+) -> JVSimulationOutput | SimulationError | DeviceParametersIncompleteError:
     result = run_simulation(
         path_to_executable=path_to_executable,
         cmd_pars=[{"par": "dev_par_file", "val": str(setup_file)}],
         session_path=session_path,
+        simss_ui=simss_ui,
     )
 
-    if isinstance(result, (SimulationError, DeviceParametersIncompleteError)):
+    if isinstance(result, SimulationError):
         return result
 
-    files_to_check = [
-        "AbsorptionSpectrum.txt",
-        "reflection_transmission_spectrum.txt",
-        "E_of_x.txt",
-        "alpha_of_x.txt",
-        "JV.dat",
-    ]
-    for file in files_to_check:
-        if not (session_path / file).exists():
-            return SimulationError(
-                message=f"Simulation did not produce the expected output files. Missing file: {file}",
-            )
-
-    return None
-
-
-def create_jV_simulation_plots(
-    session_path: Path,
-    dpi: int,
-):
-    save_figure(
-        UVVisData.from_files(
-            uvvis_file=session_path / "AbsorptionSpectrum.txt",
-            rt_file=session_path / "reflection_transmission_spectrum.txt",
-        ),
-        save_path=session_path / "uvvis.png",
-        dpi=dpi,
+    uvvis = UVVisData.from_files(
+        uvvis_file=session_path / SimssOutputFiles.ABSORPTION_SPECTRUM,
+        rt_file=session_path / SimssOutputFiles.REFLECTION_TRANSMISSION_SPECTRUM,
     )
 
-    save_figure(
-        ElectricFieldData.from_file(session_path / "E_of_x.txt"),
-        save_path=session_path / "E_of_x.png",
-        dpi=dpi,
+    electric_field = ElectricFieldData.from_file(session_path / SimssOutputFiles.E_OF_X)
+
+    absorption_coefficient = AbsorptionCoefficientData.from_file(
+        session_path / SimssOutputFiles.ALPHA_OF_X,
     )
 
-    save_figure(
-        AbsorptionCoefficientData.from_file(session_path / "alpha_of_x.txt"),
-        save_path=session_path / "alpha_of_x.png",
-        dpi=dpi,
+    jv = JVData.from_files(
+        device_characteristics_file=session_path / simss_ui.scParsFile,
+        jv_file=session_path / simss_ui.JVFile,
     )
 
-    save_figure(
-        JVData.from_files(
-            device_characteristics_file=session_path / "scPars.dat",
-            jv_file=session_path / "JV.dat",
-        ),
-        save_path=session_path / "jV.png",
-        dpi=dpi,
-    )
+    output = [uvvis, electric_field, absorption_coefficient, jv]
 
-
-def preserve_jV_simulation_output(
-    session_path: Path,
-):
-    device_characteristics_file = session_path / "scPars.dat"
-    if device_characteristics_file.exists():
-        shutil.copy(
-            session_path / "scPars.dat",
-            session_path / "device_characteristics.txt",
+    if plot_output:
+        _plot_output(
+            session_path=session_path,
+            plotables=output,
+            plot_dpi=plot_dpi,
         )
 
-    shutil.move(
-        session_path / "JV.dat",
-        session_path / "jV.txt",
+    _preserve_output(
+        session_path=session_path, simulation_output=output, simss_ui=simss_ui
     )
+
+    clean_up_simulation_output(session_path=session_path, simss_ui=simss_ui)
+
+    if isinstance(result, DeviceParametersIncompleteError):
+        return result
+
+    return JVSimulationOutput(
+        uvvis=uvvis,
+        electric_field=electric_field,
+        absorption_coefficient=absorption_coefficient,
+        jv=jv,
+    )
+
+
+def _plot_output(
+    session_path: Path,
+    plotables: list[Plotable],
+    plot_dpi: int,
+) -> None:
+    for plotable in plotables:
+        save_figure(
+            plotable,
+            save_path=session_path / f"{plotable.__class__.__name__}.png",
+            dpi=plot_dpi,
+        )
+
+
+def _preserve_output(
+    session_path: Path,
+    simulation_output: tuple[
+        UVVisData, ElectricFieldData, AbsorptionCoefficientData, JVData
+    ],
+    simss_ui: UserInterface,
+):
+    for output in simulation_output:
+        output.to_parquet(
+            save_dir=session_path,
+        )
+
+    if (path := session_path / simss_ui.scParsFile).exists():
+        if path.suffix == ".txt":
+            raise ValueError(
+                f"File {path} already has the .txt extension. Cannot rename it again."
+            )
+        shutil.move(path, path.with_suffix(".txt"))
