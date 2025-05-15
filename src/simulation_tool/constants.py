@@ -22,7 +22,7 @@ PATH_TO_SIMSS_EXECUTABLE = Path(
     "/home/jona/Promotion/Repositories/simsalabim/pySIMsalabim/SIMsalabim/SimSS/simss"
 )
 
-PLOTTING_ENABLED = False
+PLOTTING_ENABLED = True
 """Enable plotting of the results. This is used to enable or disable plotting of the results."""
 DPI = 60
 """DPI for the plots."""
@@ -32,14 +32,25 @@ USE_KK_CONSISTENT_GENERATION = True
 """Use Kramers-Kronig consistent generation of n and k."""
 N_OFFSET_RANGE = (1.1, 1.8)
 """Range for the n offset. This is used to generate the refractive index n."""
+NK_FILE_NAME = "nk.txt"
+"""Name of the generated nk file. This is used to store the refractive index n and extinction coefficient k."""
 
 WAVE_LENGTH_STEP = NANO
 """Step size for the wavelength in nm. This is used for the optical data generation."""
 LAMBDA_STEP = 10 * NANO
 """Step size for the wavelength in nm. This is used for the EQE simulation."""
 
+UVVIS_FILE_NAME = "uvvis"
+"""Name of the generated UV-Vis file. This is used to store the UV-Vis data. A file ending will be added automatically."""
+
 SIMULATION_TIMEOUT = 30
 """Timeout for the simulation in seconds. This is used to timeout the subprocess call to the simulation executable."""
+
+EQE_SIM_OUTPUT_FILE_NAME = "EQE"
+"""Name of the generated EQE file. This is used to store the EQE data. A file ending will be added automatically."""
+
+JV_SIM_OUTPUT_FILE_NAME = "jV"
+"""Name of the generated jV file. This is used to store the jV data. A file ending will be added automatically."""
 
 ADDITIONAL_FILES_DIR = Path(__file__).parent / "additional_files"
 """Directory for the additional files. This is used to store the additional files that are needed for the simulation. For example nk.txt and spectrum.txt files"""
