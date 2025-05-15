@@ -56,7 +56,7 @@ class JVData:
         save_dir: Path,
         dtype: pl.DataType = pl.Float32,
     ):
-        save_location = save_dir / "JV.parquet"
+        save_location = save_dir / "jV.parquet"
         pl.DataFrame(asdict(self)).with_columns([pl.all().cast(dtype)]).write_parquet(
             file=save_location
         )
