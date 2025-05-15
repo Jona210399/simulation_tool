@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import polars as pl
@@ -15,10 +15,13 @@ class EQEData:
 
     @classmethod
     def from_file(cls, file_path: Path) -> "EQEData":
-        data = pl.read_csv(
-            file_path,
-            separator=" ",
-        )
+        if file_path.suffix == ".parquet":
+            data = pl.read_parquet(source=file_path)
+        else:
+            data = pl.read_csv(
+                file_path,
+                separator=" ",
+            )
 
         return cls.from_dataframe(data)
 
@@ -27,6 +30,21 @@ class EQEData:
         wavelengths = df["lambda"].to_numpy()
         eqe = df["EQE"].to_numpy()
         return cls(wavelengths, eqe)
+
+    def to_parquet(
+        self,
+        save_dir: Path,
+        dtype: pl.DataType = pl.Float32,
+    ):
+        save_location = save_dir / "EQE.parquet"
+        pl.DataFrame(self.to_saveable_dict()).with_columns(
+            [pl.all().cast(dtype)]
+        ).write_parquet(file=save_location)
+
+    def to_saveable_dict(self) -> dict[str, Array1D]:
+        dict_ = asdict(self)
+        # preserves key order
+        return {"lambda": dict_.pop("wavelenghts"), **dict_}
 
     def plot(
         self,
