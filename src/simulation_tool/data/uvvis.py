@@ -6,7 +6,7 @@ import polars as pl
 from matplotlib.axes import Axes
 
 from simulation_tool.constants import M_TO_NM
-from simulation_tool.typing_ import Array1D, PathLike
+from simulation_tool.typing_ import Array1D
 
 
 @dataclass
@@ -19,8 +19,8 @@ class UVVisData:
     @classmethod
     def from_files(
         cls,
-        uvvis_file: PathLike,
-        rt_file: PathLike,
+        uvvis_file: Path,
+        rt_file: Path,
     ) -> "UVVisData":
         uvvis_data = np.loadtxt(uvvis_file)
         rt_data = np.loadtxt(rt_file)
