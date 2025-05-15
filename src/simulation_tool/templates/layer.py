@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from simulation_tool.constants import ADDITIONAL_FILES_DIR
+from simulation_tool.constants import ADDITIONAL_FILES_DIR, NK_FILE_NAME
 from simulation_tool.templates.serializeable import JSONSerializable
 from simulation_tool.typing_ import PathLike
 
@@ -259,7 +259,7 @@ class Layer(JSONSerializable):
 
         layer.generation.G_ehp = 7.25e27
         layer.generation.layerGen = 1
-        layer.generation.nkLayer = f"{session_path}/nk.txt"
+        layer.generation.nkLayer = f"{session_path / NK_FILE_NAME}"
 
         layer.bulk.N_t_bulk = 4.42e21
 
