@@ -3,6 +3,7 @@ from subprocess import TimeoutExpired, run
 
 from simulation_tool.constants import SIMULATION_TIMEOUT
 from simulation_tool.exceptions import DeviceParametersIncompleteError, SimulationError
+from simulation_tool.templates.simss import SimssOutputFiles, UserInterface
 
 
 def construct_command(
@@ -36,7 +37,8 @@ def run_simulation(
     session_path: Path,
     path_to_executable: Path,
     cmd_pars: dict[str, dict[str, str]],
-) -> SimulationError | None:
+    simss_ui: UserInterface,
+) -> SimulationError | DeviceParametersIncompleteError | None:
     cmd_line = construct_command(
         path_to_executable=path_to_executable,
         cmd_pars=cmd_pars,
@@ -44,7 +46,7 @@ def run_simulation(
 
     stdout = session_path / "sim.out"
     stderr = session_path / "sim.err"
-    scPars_file = session_path / "scPars.dat"
+    scPars_file = session_path / simss_ui.scParsFile
 
     with open(stdout, "w") as stdout_file:
         with open(stderr, "w") as stderr_file:
@@ -70,7 +72,21 @@ def run_simulation(
 
     if not scPars_file.exists():
         return DeviceParametersIncompleteError(
-            message="Simulation did not produce the expected output files. Missing file: scPars.dat",
+            message=f"Simulation did not produce the expected output files. Missing file: {simss_ui.scParsFile}",
         )
 
+    for file in SimssOutputFiles.get_all() + [simss_ui.JVFile]:
+        if not (session_path / file).exists():
+            return SimulationError(
+                message=f"Simulation did not produce the expected output files. Missing file: {file}",
+            )
+
     return None
+
+
+def clean_up_simulation_output(
+    session_path: Path,
+    simss_ui: UserInterface,
+) -> None:
+    for file in SimssOutputFiles.get_all() + simss_ui.get_files():
+        (session_path / file).unlink(missing_ok=True)
