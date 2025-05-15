@@ -8,16 +8,18 @@ from scipy.constants import c, pi
 from scipy.interpolate import interp1d
 from scipy.signal import hilbert
 
-from simulation_tool.constants import M_TO_NM, NM_TO_M
+from simulation_tool.constants import (
+    M_TO_NM,
+    N_OFFSET_RANGE,
+    NM_TO_M,
+    USE_KK_CONSISTENT_GENERATION,
+)
 from simulation_tool.typing_ import Array1D
 from simulation_tool.utils import (
     convolute_gaussians,
     get_num_points_for_linspace,
     wavelenght_to_energy,
 )
-
-USE_KK_CONSISTENT_GENERATION = True
-N_OFFSET_RANGE = (1.1, 1.8)
 
 
 @dataclass

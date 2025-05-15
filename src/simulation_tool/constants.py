@@ -19,7 +19,7 @@ NUM_PHOTONS = 0.03 * 1e21
 """Number of photons that are added to the irradiance during EQE simulation. In this example it is 3% of the number of photons absorbed by a Silicon solar cell in m-2"""
 
 PATH_TO_SIMSS_EXECUTABLE = Path(
-    "/home/ws/gv6569/repos/simsalabim/pySIMsalabim/SIMsalabim/SimSS/simss"
+    "/home/jona/Promotion/Repositories/simsalabim/pySIMsalabim/SIMsalabim/SimSS/simss"
 )
 
 PLOTTING_ENABLED = False
@@ -27,6 +27,11 @@ PLOTTING_ENABLED = False
 DPI = 60
 """DPI for the plots."""
 ADJUST_BAND_DIAGRAM_Y_AXIS = True
+
+USE_KK_CONSISTENT_GENERATION = True
+"""Use Kramers-Kronig consistent generation of n and k."""
+N_OFFSET_RANGE = (1.1, 1.8)
+"""Range for the n offset. This is used to generate the refractive index n."""
 
 WAVE_LENGTH_STEP = NANO
 """Step size for the wavelength in nm. This is used for the optical data generation."""
