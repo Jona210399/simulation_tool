@@ -1,9 +1,7 @@
 import shutil
 from pathlib import Path
 
-import pySIMsalabim as sim
-
-from simulation_tool.constants import PLOTTING_ENABLED
+from simulation_tool.constants import NK_FILE_NAME, PLOTTING_ENABLED
 from simulation_tool.templates.simss import SimssConfig
 
 
@@ -34,6 +32,10 @@ def collect_session_data(session_path: Path):
     data_dir = session_path / "data"
     data_dir.mkdir(exist_ok=True)
 
+    for data_file in session_path.glob("*.parquet"):
+        destination = data_dir / data_file.name
+        shutil.move(data_file, destination)
+
     for data_file in session_path.glob("*.txt"):
         destination = data_dir / data_file.name
         shutil.move(data_file, destination)
@@ -51,23 +53,16 @@ def clean_session(
     if not session_path.exists():
         return
 
-    (session_path / simss_config.ui.logFile).unlink(missing_ok=True)
-
-    collect_session_plots(session_path)
-    collect_session_data(session_path)
-
-    (session_path / simss_config.ui.varFile).unlink(missing_ok=True)
-    simss_config.setup_file.unlink(missing_ok=True)
-    (session_path / simss_config.ui.JVFile).unlink(missing_ok=True)
-    (session_path / simss_config.ui.scParsFile).unlink(missing_ok=True)
-
     layer_files = [
         simss_config.layers.l1,
         simss_config.layers.l2,
         simss_config.layers.l3,
     ]
 
-    for layer_file in layer_files:
-        layer_file.unlink(missing_ok=True)
+    for file in layer_files + [session_path / NK_FILE_NAME]:
+        file.unlink(missing_ok=True)
 
-    sim.delete_folders("tmp", session_path)
+    collect_session_plots(session_path)
+    collect_session_data(session_path)
+
+    simss_config.setup_file.unlink(missing_ok=True)
