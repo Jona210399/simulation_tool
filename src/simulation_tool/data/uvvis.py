@@ -1,6 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from pathlib import Path
 
 import numpy as np
+import polars as pl
 from matplotlib.axes import Axes
 
 from simulation_tool.constants import M_TO_NM
@@ -29,6 +31,22 @@ class UVVisData:
         transmission = 1.0 - reflection - absorption
 
         return cls(wavelengths, absorption, reflection, transmission)
+
+    @classmethod
+    def from_file(cls, file_path: Path) -> "UVVisData":
+        data = pl.read_parquet(source=file_path)
+        return cls(
+            wavelengths=data[:, 0].to_numpy(),
+            absorption=data[:, 1].to_numpy(),
+            reflection=data[:, 2].to_numpy(),
+            transmission=data[:, 3].to_numpy(),
+        )
+
+    def to_parquet(self, save_dir: Path, dtype: pl.DataType = pl.Float32):
+        save_location = save_dir / "uvvis.parquet"
+        pl.DataFrame(asdict(self)).with_columns([pl.all().cast(dtype)]).write_parquet(
+            file=save_location
+        )
 
     def plot(
         self,
