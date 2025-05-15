@@ -6,15 +6,23 @@ import polars as pl
 from numpy.typing import NDArray
 from scipy import constants
 
-from simulation_tool.constants import M_TO_NM, NANO, NUM_PHOTONS
+from simulation_tool.constants import (
+    EQE_SIM_OUTPUT_FILE_NAME,
+    M_TO_NM,
+    NANO,
+    NUM_PHOTONS,
+)
 from simulation_tool.EQE.data import EQEData
-from simulation_tool.exceptions import SimulationError
-from simulation_tool.simsalabim.run import run_simulation
+from simulation_tool.exceptions import DeviceParametersIncompleteError, SimulationError
+from simulation_tool.simsalabim.run import clean_up_simulation_output, run_simulation
+from simulation_tool.templates.simss import UserInterface
 from simulation_tool.utils import save_figure
 
 h = constants.h
 c = constants.c
 q = constants.e
+
+FatalError = SimulationError | DeviceParametersIncompleteError
 
 
 @dataclass
@@ -26,27 +34,33 @@ class EQEParameters:
 
 
 def run_EQE_simulation(
-    setup_file: Path,
     session_path: Path,
+    setup_file: Path,
     path_to_executable: Path,
-    spectrum: Path,
-    lambda_min,
-    lambda_max,
-    lambda_step,
-) -> None | SimulationError:
-    scPars_file = session_path / "scPars.dat"
-    output_file = session_path / "EQE.txt"
+    simss_ui: UserInterface,
+    eqe_parameters: EQEParameters,
+    plot_output: bool,
+    plot_dpi: int,
+) -> EQEData | SimulationError | DeviceParametersIncompleteError:
+    scPars_file = session_path / simss_ui.scParsFile
+    output_file = session_path / EQE_SIM_OUTPUT_FILE_NAME
+    lambda_min = eqe_parameters.lambda_min
+    lambda_max = eqe_parameters.lambda_max
+    lambda_step = eqe_parameters.lambda_step
+    spectrum = eqe_parameters.spectrum
 
-    if not scPars_file.exists():
+    if not scPars_file.with_suffix(".txt").exists():
+        # If we already have a scPars file, from a previous jV Simulation, we dont have to run it again to obtain base values for jsc and jsc_err
         result = run_simulation(
             session_path=session_path,
             cmd_pars=[{"par": "dev_par_file", "val": str(setup_file)}],
             path_to_executable=path_to_executable,
+            simss_ui=simss_ui,
         )
-        if isinstance(result, SimulationError):
+        if isinstance(result, FatalError):
             return result
 
-    jsc_base, jsc_err_base = get_jsc_and_jsc_err(scPars_file)
+    jsc_base, jsc_err_base = get_jsc_and_jsc_err(scPars_file.with_suffix(".txt"))
 
     jscs, jsc_errs = [], []
 
@@ -79,11 +93,12 @@ def run_EQE_simulation(
             session_path=session_path,
             cmd_pars=cmd_pars,
             path_to_executable=path_to_executable,
+            simss_ui=simss_ui,
         )
 
         spectrum_tmp.unlink()
 
-        if isinstance(result, SimulationError):
+        if isinstance(result, FatalError):
             return result
 
         jsc, jsc_err = get_jsc_and_jsc_err(scPars_file)
@@ -100,24 +115,23 @@ def run_EQE_simulation(
         NUM_PHOTONS,
     )
 
-    (session_path / "log.txt").unlink(missing_ok=True)
-    (session_path / "scPars.dat").unlink(missing_ok=True)
-    (session_path / "JV.dat").unlink(missing_ok=True)
-
-    eqe_result.write_csv(output_file, separator=" ")
-
-    return None
-
-
-def create_EQE_simulation_plots(
-    session_path: Path,
-    dpi: int,
-):
-    save_figure(
-        EQEData.from_file(session_path / "EQE.txt"),
-        save_path=session_path / "EQE.png",
-        dpi=dpi,
+    clean_up_simulation_output(
+        session_path=session_path,
+        simss_ui=simss_ui,
     )
+
+    eqe_result.write_parquet(output_file.with_suffix(".parquet"))
+
+    eqe = EQEData.from_dataframe(eqe_result)
+
+    if plot_output:
+        save_figure(
+            eqe,
+            save_path=output_file.with_suffix(".png"),
+            dpi=plot_dpi,
+        )
+
+    return eqe
 
 
 def modify_spectrum(
