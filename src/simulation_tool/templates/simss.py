@@ -185,6 +185,14 @@ class UserInterface:
             logFile="log.txt",
         )
 
+    def get_files(self) -> list[str]:
+        return [
+            self.JVFile,
+            self.varFile,
+            self.scParsFile,
+            self.logFile,
+        ]
+
 
 @dataclass
 class SimssConfig(JSONSerializable):
@@ -218,3 +226,23 @@ class SimssConfig(JSONSerializable):
             **self.contacts.numeric_parameters(),
             **self.optics.numeric_parameters(),
         }
+
+
+class SimssOutputFiles:
+    """Look up table for the output files of the simss simulation."""
+
+    ALPHA_OF_X: Path = Path("alpha_of_x.txt")
+    E_OF_X: Path = Path("E_of_x.txt")
+    REFLECTION_TRANSMISSION_SPECTRUM: Path = Path(
+        "reflection_transmission_spectrum.txt"
+    )
+    ABSORPTION_SPECTRUM: Path = Path("AbsorptionSpectrum.txt")
+
+    @classmethod
+    def get_all(cls) -> list[Path]:
+        return [
+            cls.ALPHA_OF_X,
+            cls.E_OF_X,
+            cls.REFLECTION_TRANSMISSION_SPECTRUM,
+            cls.ABSORPTION_SPECTRUM,
+        ]
