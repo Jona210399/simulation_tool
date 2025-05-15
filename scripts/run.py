@@ -1,5 +1,4 @@
 import os
-from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
@@ -21,12 +20,9 @@ from simulation_tool.constants import (
 from simulation_tool.data import BandDiagramData, OpticalData
 from simulation_tool.EQE import (
     EQEParameters,
-    create_EQE_simulation_plots,
     run_EQE_simulation,
 )
 from simulation_tool.jV import (
-    create_jV_simulation_plots,
-    preserve_jV_simulation_output,
     run_jV_simulation,
 )
 from simulation_tool.randomization.kf_adapted import (
@@ -37,7 +33,7 @@ from simulation_tool.randomization.original import (
 )
 from simulation_tool.session import clean_session, delete_session, set_up_session
 from simulation_tool.templates.layer import Layer
-from simulation_tool.templates.simss import SimssConfig
+from simulation_tool.templates.simss import SimssConfig, UserInterface
 from simulation_tool.ui.progress_bar import joblib_progress_to_file
 from simulation_tool.utils import save_figure
 
@@ -95,6 +91,7 @@ def prepare_simulation(
     )
 
     optical_data.save(session_path)
+    optical_data.to_parquet(session_path)
 
     layers = create_layer_stack(
         session_path=session_path,
@@ -129,26 +126,21 @@ def prepare_simulation(
 def run_simulations(
     session_path: Path,
     path_to_executable: Path,
+    simss_ui: UserInterface,
     setup_file: Path,
     eqe_parameters: EQEParameters,
 ) -> str:
     simulation_result = run_jV_simulation(
         session_path=session_path,
-        setup_file=setup_file,
         path_to_executable=path_to_executable,
+        simss_ui=simss_ui,
+        setup_file=setup_file,
+        plot_output=PLOTTING_ENABLED,
+        plot_dpi=DPI,
     )
     if isinstance(simulation_result, SimulationError):
         delete_session(session_path)
         return f"ERROR {simulation_result}"
-
-    if PLOTTING_ENABLED:
-        create_jV_simulation_plots(
-            session_path=session_path,
-            dpi=DPI,
-        )
-    preserve_jV_simulation_output(
-        session_path=session_path,
-    )
 
     if isinstance(simulation_result, DeviceParametersIncompleteError):
         return f"ERROR {simulation_result}"
@@ -157,15 +149,17 @@ def run_simulations(
         session_path=session_path,
         setup_file=setup_file,
         path_to_executable=path_to_executable,
-        **asdict(eqe_parameters),
+        simss_ui=simss_ui,
+        eqe_parameters=eqe_parameters,
+        plot_output=PLOTTING_ENABLED,
+        plot_dpi=DPI,
     )
 
-    if isinstance(simulation_result, SimulationError):
+    if isinstance(
+        simulation_result, (SimulationError, DeviceParametersIncompleteError)
+    ):
         delete_session(session_path)
         return f"ERROR {simulation_result}"
-
-    if PLOTTING_ENABLED:
-        create_EQE_simulation_plots(session_path=session_path, dpi=DPI)
 
     return "DONE"
 
@@ -198,6 +192,7 @@ def run(
     result = run_simulations(
         session_path=session_path,
         path_to_executable=PATH_TO_SIMSS_EXECUTABLE,
+        simss_ui=smiss_config.ui,
         setup_file=smiss_config.setup_file,
         eqe_parameters=eqe_parameters,
     )
@@ -255,7 +250,7 @@ def run_parallel(
 def main():
     identifier = os.getenv("SLURM_JOB_ID", "")
     simulation_dir = Path.cwd() / "simulation_runs" / identifier
-    num_workers = os.getenv("SLURM_CPUS_PER_TASK", 20)
+    num_workers = os.getenv("SLURM_CPUS_PER_TASK", 1)
 
     start = datetime.now()
     print(f"Simulation started at: {start}")
