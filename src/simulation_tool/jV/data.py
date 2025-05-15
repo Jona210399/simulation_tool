@@ -1,16 +1,17 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from pathlib import Path
 
 import numpy as np
 import polars as pl
 from matplotlib.axes import Axes
 
-from simulation_tool.typing_ import Array1D, PathLike
+from simulation_tool.typing_ import Array1D
 
 
 @dataclass
 class JVData:
-    v_ext: Array1D
-    j_ext: Array1D
+    Vext: Array1D
+    Jext: Array1D
     voc: float
     jsc: float
     ff: float
@@ -18,8 +19,8 @@ class JVData:
     @classmethod
     def from_files(
         cls,
-        device_characteristics_file: PathLike,
-        jv_file: PathLike,
+        device_characteristics_file: Path,
+        jv_file: Path,
     ) -> "JVData":
         if device_characteristics_file.exists():
             device_characteristics = pl.read_csv(
@@ -37,7 +38,10 @@ class JVData:
             jsc = np.nan
             ff = np.nan
 
-        jv_data = pl.read_csv(jv_file, separator=" ", truncate_ragged_lines=True)
+        if jv_file.suffix == ".parquet":
+            jv_data = pl.read_parquet(source=jv_file)
+        else:
+            jv_data = pl.read_csv(jv_file, separator=" ", truncate_ragged_lines=True)
 
         return cls(
             jv_data["Vext"].to_numpy(),
@@ -45,6 +49,16 @@ class JVData:
             voc,
             jsc,
             ff,
+        )
+
+    def to_parquet(
+        self,
+        save_dir: Path,
+        dtype: pl.DataType = pl.Float32,
+    ):
+        save_location = save_dir / "JV.parquet"
+        pl.DataFrame(asdict(self)).with_columns([pl.all().cast(dtype)]).write_parquet(
+            file=save_location
         )
 
     def calculate_pce(self, pin: float = 1000.0) -> float:
@@ -64,8 +78,8 @@ class JVData:
     ):
         plot_jV(
             ax=ax,
-            v_ext=self.v_ext,
-            j_ext=self.j_ext,
+            v_ext=self.Vext,
+            j_ext=self.Jext,
             voc=self.voc,
             jsc=self.jsc,
             ff=self.ff,
