@@ -7,12 +7,19 @@ import polars as pl
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 
-from simulation_tool.constants import RUN_DIR_PREFIX, SET_UP_FILE
+from simulation_tool.constants import (
+    EQE_SIM_OUTPUT_FILE_NAME,
+    JV_SIM_OUTPUT_FILE_NAME,
+    NK_FILE_NAME,
+    RUN_DIR_PREFIX,
+    SET_UP_FILE,
+    UVVIS_FILE_NAME,
+)
 from simulation_tool.data import OpticalData, UVVisData
 from simulation_tool.EQE import EQEData
 from simulation_tool.jV import JVData
 from simulation_tool.templates.layer import Layer
-from simulation_tool.templates.simss import SimssConfig
+from simulation_tool.templates.simss import SimssConfig, UserInterface
 from simulation_tool.utils import add_prefix_to_keys, get_sorted_run_dirs
 
 LINE_WIDTH: float = 1.0
@@ -40,22 +47,25 @@ def read_session_configuration(session_path: Path) -> tuple[SimssConfig, list[La
 
 def read_simulation_data(
     session_path: Path,
+    simss_ui: UserInterface,
 ) -> tuple[JVData, UVVisData, EQEData, OpticalData]:
     data_dir = session_path / "data"
 
     jv_data = JVData.from_files(
-        device_characteristics_file=data_dir / "device_characteristics.txt",
-        jv_file=data_dir / "jV.txt",
+        device_characteristics_file=data_dir / simss_ui.scParsFile,
+        jv_file=(data_dir / JV_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet"),
     )
 
-    uvvis_data = UVVisData.from_files(
-        uvvis_file=data_dir / "AbsorptionSpectrum.txt",
-        rt_file=data_dir / "reflection_transmission_spectrum.txt",
+    uvvis_data = UVVisData.from_file(
+        (data_dir / UVVIS_FILE_NAME).with_suffix(".parquet")
+    )
+    eqe_data = EQEData.from_file(
+        (data_dir / EQE_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet")
     )
 
-    eqe_data = EQEData.from_file(data_dir / "EQE.txt")
-
-    optical_data = OpticalData.from_file(data_dir / "nk.txt")
+    optical_data = OpticalData.from_file(
+        (data_dir / NK_FILE_NAME).with_suffix(".parquet")
+    )
 
     return jv_data, uvvis_data, eqe_data, optical_data
 
@@ -73,33 +83,13 @@ def get_relevant_parameters(
 
 def post_process_session(session_path: Path):
     simss_config, layers = read_session_configuration(session_path)
-    jv_data, uvvis_data, eqe_data, optical_data = read_simulation_data(session_path)
+    jv_data, uvvis_data, eqe_data, optical_data = read_simulation_data(
+        session_path, simss_config.ui
+    )
 
     parameters = get_relevant_parameters(simss_config, layers)
 
     return jv_data, uvvis_data, eqe_data, optical_data, parameters
-
-
-def save_jV_data(
-    jVs: list[JVData], save_dir: Path
-) -> tuple[
-    NDArray,
-    NDArray,
-    NDArray,
-    NDArray,
-    NDArray,
-    NDArray,
-]:
-    np.savetxt(save_dir / "jv_j.txt", v := np.stack([jv.v_ext for jv in jVs]))
-    np.savetxt(save_dir / "jv_v.txt", j := np.stack([jv.j_ext for jv in jVs]))
-    np.savetxt(save_dir / "FFs.txt", ff := np.array([jv.ff for jv in jVs]))
-    np.savetxt(save_dir / "Vocs.txt", voc := np.array([jv.voc for jv in jVs]))
-    np.savetxt(save_dir / "Jscs.txt", jsc := np.array([jv.jsc for jv in jVs]))
-    np.savetxt(
-        save_dir / "PCEs.txt", pce := np.array([jv.calculate_pce() for jv in jVs])
-    )
-
-    return v, j, ff, voc, jsc, pce
 
 
 def plot_device_characteristics_distributions(
@@ -186,6 +176,40 @@ def plot_uvvis(
     plt.close()
 
 
+def save_jV_data(
+    jVs: list[JVData], save_dir: Path
+) -> tuple[
+    NDArray,
+    NDArray,
+    NDArray,
+    NDArray,
+    NDArray,
+    NDArray,
+]:
+    v = np.stack([jv.Vext for jv in jVs])
+    j = np.stack([jv.Jext for jv in jVs])
+    ff = np.array([jv.ff for jv in jVs])
+    voc = np.array([jv.voc for jv in jVs])
+    jsc = np.array([jv.jsc for jv in jVs])
+    pce = np.array([jv.calculate_pce() for jv in jVs])
+
+    df = pl.concat(
+        [
+            pl.from_numpy(v, schema=["Vext"]),
+            pl.from_numpy(j, schema=["Jext"]),
+            pl.from_numpy(ff, schema=["FF"]),
+            pl.from_numpy(voc, schema=["Voc"]),
+            pl.from_numpy(jsc, schema=["Jsc"]),
+            pl.from_numpy(pce, schema=["PCE"]),
+        ],
+        how="horizontal",
+    )
+
+    df.write_parquet(file=(save_dir / JV_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet"))
+
+    return v, j, ff, voc, jsc, pce
+
+
 def save_uvvis_data(
     uvvis: list[UVVisData], save_dir: Path
 ) -> tuple[
@@ -193,15 +217,21 @@ def save_uvvis_data(
     NDArray,
     NDArray,
 ]:
-    np.savetxt(
-        save_dir / "absorption_A.txt", a := np.stack([uvv.absorption for uvv in uvvis])
+    wavelenghts = np.stack((uvv.wavelengths for uvv in uvvis))
+    a = np.stack((uvv.absorption for uvv in uvvis))
+    r = np.stack((uvv.reflection for uvv in uvvis))
+
+    df = pl.concat(
+        [
+            pl.from_numpy(wavelenghts, schema=["wavelenghts"]),
+            pl.from_numpy(a, schema=["absorption"]),
+            pl.from_numpy(r, schema=["reflection"]),
+        ],
+        how="horizontal",
     )
-    np.savetxt(
-        save_dir / "reflection_R.txt", r := np.stack([uvv.reflection for uvv in uvvis])
-    )
-    np.savetxt(
-        save_dir / "absorption_wavelenghts.txt", wavelenghts := uvvis[0].wavelengths
-    )
+
+    df.write_parquet(file=(save_dir / UVVIS_FILE_NAME).with_suffix(".parquet"))
+
     return a, r, wavelenghts
 
 
@@ -212,16 +242,35 @@ def save_optical_data(
     NDArray,
     NDArray,
 ]:
-    np.savetxt(save_dir / "nk_n.txt", n := np.stack([opt.n for opt in optical]))
-    np.savetxt(save_dir / "nk_k.txt", k := np.stack([opt.k for opt in optical]))
-    np.savetxt(save_dir / "nk_wavelenghts.txt", wavelenghts := optical[0].wavelenghts)
+    n = np.stack([opt.n for opt in optical])
+    k = np.stack([opt.k for opt in optical])
+    wavelenghts = np.stack([opt.wavelenghts for opt in optical])
+
+    df = pl.concat(
+        [
+            pl.from_numpy(wavelenghts, schema=["wavelenghts"]),
+            pl.from_numpy(n, schema=["n"]),
+            pl.from_numpy(k, schema=["k"]),
+        ],
+        how="horizontal",
+    )
+
+    df.write_parquet(file=(save_dir / NK_FILE_NAME).with_suffix(".parquet"))
 
     return n, k, wavelenghts
 
 
 def save_eqe_data(eqes: list[EQEData], save_dir: Path) -> tuple[NDArray, NDArray]:
-    np.savetxt(save_dir / "EQE.txt", eqe := np.stack([eqe.eqe for eqe in eqes]))
-    np.savetxt(save_dir / "EQE_wavelenghts.txt", wavelenghts := eqes[0].wavelenghts)
+    eqe = np.stack([eqe.EQE for eqe in eqes])
+    wavelenghts = np.stack([eqe.wavelenghts for eqe in eqes])
+    df = pl.concat(
+        [
+            pl.from_numpy(wavelenghts, schema=["wavelenghts"]),
+            pl.from_numpy(eqe, schema=["EQE"]),
+        ],
+        how="horizontal",
+    )
+    df.write_parquet(file=(save_dir / EQE_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet"))
 
     return eqe, wavelenghts
 
@@ -233,7 +282,7 @@ def save_parameters(parameters: list[dict], save_dir: Path) -> pl.DataFrame:
         data=data,
         schema=columns,
     )
-    df.write_csv(file=save_dir / "params.csv")
+    df.write_parquet(file=save_dir / "params.parquet")
     return df
 
 
