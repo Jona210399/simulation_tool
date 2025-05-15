@@ -6,6 +6,7 @@ import polars as pl
 from matplotlib.axes import Axes
 
 from simulation_tool.constants import M_TO_NM, NM_TO_M
+from simulation_tool.templates.simss import SimssOutputFiles
 from simulation_tool.typing_ import Array1D
 
 
@@ -28,7 +29,7 @@ class AbsorptionCoefficientData:
         save_dir: Path,
         dtype: pl.DataType = pl.Float32,
     ):
-        save_location = save_dir / "alpha_of_x.parquet"
+        save_location = save_dir / SimssOutputFiles.ALPHA_OF_X.with_suffix(".parquet")
         pl.DataFrame(asdict(self)).with_columns([pl.all().cast(dtype)]).write_parquet(
             file=save_location
         )
