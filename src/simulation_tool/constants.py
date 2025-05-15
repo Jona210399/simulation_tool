@@ -21,6 +21,7 @@ NUM_PHOTONS = 0.03 * 1e21
 PATH_TO_SIMSS_EXECUTABLE = Path(
     "/home/jona/Promotion/Repositories/simsalabim/pySIMsalabim/SIMsalabim/SimSS/simss"
 )
+"""Path to the simss executable. This is used to run the simulation. The path should be absolute and point to the simss executable."""
 
 PLOTTING_ENABLED = True
 """Enable plotting of the results. This is used to enable or disable plotting of the results."""
