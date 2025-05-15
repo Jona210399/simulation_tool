@@ -21,9 +21,7 @@ class AbsorptionCoefficientData:
         else:
             data = np.loadtxt(file_path)
 
-        x = data[:, 0]
-        absorption_coefficient = data[:, 1]
-        return cls(absorption_coefficient, x)
+        return cls(x=data[:, 0], alpha=data[:, 1])
 
     def to_parquet(
         self,
