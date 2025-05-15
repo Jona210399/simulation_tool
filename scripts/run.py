@@ -138,11 +138,8 @@ def run_simulations(
         plot_output=PLOTTING_ENABLED,
         plot_dpi=DPI,
     )
-    if isinstance(simulation_result, SimulationError):
+    if isinstance(simulation_result, SimulationError, DeviceParametersIncompleteError):
         delete_session(session_path)
-        return f"ERROR {simulation_result}"
-
-    if isinstance(simulation_result, DeviceParametersIncompleteError):
         return f"ERROR {simulation_result}"
 
     simulation_result = run_EQE_simulation(
