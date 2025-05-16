@@ -1,4 +1,4 @@
-A wrapper tool around pySIMsalabim for jV Curve and EQE simulations.
+A wrapper tool around SIMsalabim for jV Curve and EQE simulations.
 
 
 ## Randomization Insights:
