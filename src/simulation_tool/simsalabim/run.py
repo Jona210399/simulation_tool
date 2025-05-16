@@ -6,42 +6,30 @@ from simulation_tool.exceptions import DeviceParametersIncompleteError, Simulati
 from simulation_tool.templates.simss import SimssOutputFiles, UserInterface
 
 
-def construct_command(
-    path_to_executable: Path,
-    cmd_pars: dict[str, dict[str, str]],
-):
-    """Construct a single string to use as command to run a SIMsalabim executable."""
+def _construct_command(path_to_executable: Path, cmd_params: dict[str, str]) -> str:
+    cmd = str(path_to_executable)
+    cmd_params = cmd_params.copy()
 
-    cmd_line = str(path_to_executable)
+    dev_par_file = "dev_par_file"
+    if dev_par_file in cmd_params:
+        file = cmd_params.pop(dev_par_file)
+        cmd += f" {file}"
 
-    # Check whether a device parameters file has been defined
-    for i in cmd_pars:
-        # When specified, the device parameter file must be placed first, as is required by SIMsalabim
-        if i["par"] == "dev_par_file":
-            args_single = " " + i["val"] + " "
-            cmd_line = cmd_line + args_single
-            # After the dev_par_file key had been found once, stop the loop. If more than one dev_par_file is specified, the rest are ignored.
-            break
+    for key, value in cmd_params.items():
+        cmd += f" -{key} {value}"
 
-    # Add the parameters
-    for i in cmd_pars:
-        if i["par"] != "dev_par_file":
-            # Add each parameter as " -par_name par_value"
-            args_single = " -" + i["par"] + " " + i["val"]
-            cmd_line = cmd_line + args_single
-
-    return cmd_line
+    return cmd
 
 
 def run_simulation(
     session_path: Path,
     path_to_executable: Path,
-    cmd_pars: dict[str, dict[str, str]],
+    cmd_params: dict[str, str],
     simss_ui: UserInterface,
 ) -> SimulationError | DeviceParametersIncompleteError | None:
-    cmd_line = construct_command(
+    cmd_line = _construct_command(
         path_to_executable=path_to_executable,
-        cmd_pars=cmd_pars,
+        cmd_params=cmd_params,
     )
 
     stdout = session_path / "sim.out"

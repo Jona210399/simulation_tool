@@ -28,7 +28,7 @@ def run_jV_simulation(
 ) -> JVSimulationOutput | SimulationError | DeviceParametersIncompleteError:
     result = run_simulation(
         path_to_executable=path_to_executable,
-        cmd_pars=[{"par": "dev_par_file", "val": str(setup_file)}],
+        cmd_params={"dev_par_file": str(setup_file)},
         session_path=session_path,
         simss_ui=simss_ui,
     )

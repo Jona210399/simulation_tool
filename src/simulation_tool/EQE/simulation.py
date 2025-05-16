@@ -53,7 +53,7 @@ def run_EQE_simulation(
         # If we already have a scPars file, from a previous jV Simulation, we dont have to run it again to obtain base values for jsc and jsc_err
         result = run_simulation(
             session_path=session_path,
-            cmd_pars=[{"par": "dev_par_file", "val": str(setup_file)}],
+            cmd_params={"dev_par_file", str(setup_file)},
             path_to_executable=path_to_executable,
             simss_ui=simss_ui,
         )
@@ -81,17 +81,12 @@ def run_EQE_simulation(
         spectrum_data_tmp = modify_spectrum(spectrum_data, wavelenght, NUM_PHOTONS)
         spectrum_data_tmp.write_csv(spectrum_tmp, separator=" ")
 
-        cmd_pars = [
-            {"par": "dev_par_file", "val": str(setup_file)},
-            {
-                "par": "spectrum",
-                "val": str(spectrum_tmp),
-            },
-        ]
-
         result = run_simulation(
             session_path=session_path,
-            cmd_pars=cmd_pars,
+            cmd_params={
+                "dev_par_file": str(setup_file),
+                "spectrum": str(spectrum_tmp),
+            },
             path_to_executable=path_to_executable,
             simss_ui=simss_ui,
         )
