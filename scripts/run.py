@@ -138,7 +138,9 @@ def run_simulations(
         plot_output=PLOTTING_ENABLED,
         plot_dpi=DPI,
     )
-    if isinstance(simulation_result, SimulationError, DeviceParametersIncompleteError):
+    if isinstance(
+        simulation_result, (SimulationError, DeviceParametersIncompleteError)
+    ):
         delete_session(session_path)
         return f"ERROR {simulation_result}"
 
