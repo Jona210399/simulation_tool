@@ -1,9 +1,10 @@
 import os
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 
-import joblib
 import numpy as np
+from tqdm import tqdm
 
 import simulation_tool.templates.to_text as to_text
 from simulation_tool import DeviceParametersIncompleteError, SimulationError
@@ -34,7 +35,6 @@ from simulation_tool.randomization.original import (
 from simulation_tool.session import clean_session, delete_session, set_up_session
 from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig, UserInterface
-from simulation_tool.ui.progress_bar import joblib_progress_to_file
 from simulation_tool.utils import save_figure
 
 randomize_device = (
@@ -215,29 +215,24 @@ def run_parallel(
 
     random_seed = int(os.getenv("SLURM_JOB_ID", 0))
 
-    jobs = [
-        joblib.delayed(run)(
-            simulation_dir,
-            process_id,
-            randomized,
-            random_seed + process_id,
-        )
-        for process_id in range(num_todo)
-    ]
-
-    with joblib_progress_to_file(
-        simulation_dir=simulation_dir,
-        total=num_todo,
-        description="Running simulations",
-    ):
-        results: list[str] = joblib.Parallel(n_jobs=num_workers)(jobs)
-
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        futures = [
+            executor.submit(
+                run,
+                simulation_dir,
+                process_id,
+                randomized,
+                random_seed + process_id,
+            )
+            for process_id in range(num_todo)
+        ]
     error_count = 0
-    with open(simulation_dir / "results.txt", "w") as outfile:
-        for idx, x in enumerate(results):
-            if x.startswith("ERROR"):
+    with tqdm(total=num_todo) as pbar:
+        for future in as_completed(futures):
+            pbar.update(1)
+            result = future.result()
+            if result.startswith("ERROR"):
                 error_count += 1
-            outfile.write(f"{idx} {x}\n")
 
     print(f"Number of errors: {error_count}")
     print(f"Number of successful runs: {num_todo - error_count}")
@@ -249,7 +244,7 @@ def run_parallel(
 def main():
     identifier = os.getenv("SLURM_JOB_ID", "")
     simulation_dir = Path.cwd() / "simulation_runs" / identifier
-    num_workers = os.getenv("SLURM_CPUS_PER_TASK", 1)
+    num_workers = os.getenv("SLURM_CPUS_PER_TASK", 2)
 
     start = datetime.now()
     print(f"Simulation started at: {start}")
