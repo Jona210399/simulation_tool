@@ -145,6 +145,7 @@ def plot_jVs(
     for jV in jVs:
         jV.plot(ax=ax, linewidth=LINE_WIDTH, alpha=LINE_ALPHA, label=False)
 
+    plt.ylim(-200, 200)
     plt.savefig(save_path, dpi=dpi)
     plt.close()
 
@@ -395,7 +396,7 @@ def post_process_simulations(simulation_dir: Path):
 
 
 def main():
-    simulation_dir = Path.cwd() / "simulation_runs" / "697420"
+    simulation_dir = Path.cwd() / "simulation_runs" / "697861"
     start = datetime.now()
     print(f"Start Post Processing directory {simulation_dir} at: {start}")
     post_process_simulations(simulation_dir)
