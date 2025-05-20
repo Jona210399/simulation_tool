@@ -8,9 +8,6 @@ NM_TO_M: float = NANO
 ORIGINAL_RANDOMIZATION: bool = False
 """Use the original randomization function. This is used to switch between the original and the kf-adapted randomization function."""
 
-NUM_TODO: int = 5
-"""Number of simulations to be run. Note that this is not the number of data points, but the number of simulations. The number of data points is determined by the number of successful simulations. Not all simulations will be successful, so the number of data points will be less than or equal to the number of simulations."""
-
 
 SET_UP_FILE: str = "simulation_setup"
 """Name of the setup file. This is used to store the device setup created from the SimssConfig."""
@@ -21,12 +18,10 @@ RUN_DIR_PREFIX: str = "run"
 NUM_PHOTONS = 0.03 * 1e21
 """Number of photons that are added to the irradiance during EQE simulation. In this example it is 3% of the number of photons absorbed by a Silicon solar cell in m-2"""
 
-PATH_TO_SIMSS_EXECUTABLE = Path(
-    "/home/jona/Promotion/Repositories/simsalabim/pySIMsalabim/SIMsalabim/SimSS/simss"
-)
+PATH_TO_SIMSS_EXECUTABLE = Path("/p/project1/solai/oestreicher1/repos/simsalabim/simss")
 """Path to the simss executable. This is used to run the simulation. The path should be absolute and point to the simss executable."""
 
-PLOTTING_ENABLED = True
+PLOTTING_ENABLED = False
 """Enable plotting of the results. This is used to enable or disable plotting of the results."""
 DPI = 60
 """DPI for the plots."""
