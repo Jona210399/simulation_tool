@@ -58,7 +58,7 @@ class JVData:
 
     def to_saveable_dict(self) -> dict[str, Array1D]:
         dict_ = asdict(self)
-        keys_to_pop = ["voc, jsc", "ff"]
+        keys_to_pop = ["voc", "jsc", "ff"]
         for key in keys_to_pop:
             dict_.pop(key)
         return dict_
