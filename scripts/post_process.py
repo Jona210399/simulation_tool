@@ -1,11 +1,13 @@
 import shutil
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import polars as pl
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
+from tqdm import tqdm
 
 from simulation_tool.constants import (
     EQE_SIM_OUTPUT_FILE_NAME,
@@ -52,7 +54,9 @@ def read_simulation_data(
     data_dir = session_path / "data"
 
     jv_data = JVData.from_files(
-        device_characteristics_file=data_dir / simss_ui.scParsFile,
+        device_characteristics_file=(data_dir / simss_ui.scParsFile).with_suffix(
+            ".txt"
+        ),
         jv_file=(data_dir / JV_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet"),
     )
 
@@ -217,9 +221,9 @@ def save_uvvis_data(
     NDArray,
     NDArray,
 ]:
-    wavelenghts = np.stack((uvv.wavelengths for uvv in uvvis))
-    a = np.stack((uvv.absorption for uvv in uvvis))
-    r = np.stack((uvv.reflection for uvv in uvvis))
+    wavelenghts = np.stack([uvv.wavelengths for uvv in uvvis])
+    a = np.stack([uvv.absorption for uvv in uvvis])
+    r = np.stack([uvv.reflection for uvv in uvvis])
 
     df = pl.concat(
         [
@@ -334,7 +338,7 @@ def post_process_simulations(simulation_dir: Path):
 
     run_dirs = get_sorted_run_dirs(simulation_dir, run_dir_prefix=RUN_DIR_PREFIX)
 
-    for session_path in run_dirs:
+    for session_path in tqdm(run_dirs):
         jv_data, uvvis_data, eqe_data, optical_data, params = post_process_session(
             session_path
         )
@@ -391,8 +395,13 @@ def post_process_simulations(simulation_dir: Path):
 
 
 def main():
-    simulation_dir = Path.cwd() / "simulation_runs"
+    simulation_dir = Path.cwd() / "simulation_runs" / "697420"
+    start = datetime.now()
+    print(f"Start Post Processing directory {simulation_dir} at: {start}")
     post_process_simulations(simulation_dir)
+    end = datetime.now()
+    print(f"Ended postprocessing at. {end}")
+    print(f"Total time: {end - start}")
 
 
 if __name__ == "__main__":
