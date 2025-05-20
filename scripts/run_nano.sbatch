@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --cpus-per-task=32
+#SBATCH --cpus-per-task=128
 #SBATCH --ntasks=1
-#SBATCH --mem=64000mb
+#SBATCH --mem=256G
 #SBATCH --tasks-per-node=1
 #SBATCH --job-name=jV_sim
 #SBATCH --time=1:00:00
