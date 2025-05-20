@@ -11,7 +11,6 @@ from simulation_tool import DeviceParametersIncompleteError, SimulationError
 from simulation_tool.constants import (
     DPI,
     LAMBDA_STEP,
-    NUM_TODO,
     ORIGINAL_RANDOMIZATION,
     PATH_TO_SIMSS_EXECUTABLE,
     PLOTTING_ENABLED,
@@ -226,13 +225,13 @@ def run_parallel(
             )
             for process_id in range(num_todo)
         ]
-    error_count = 0
-    with tqdm(total=num_todo) as pbar:
-        for future in as_completed(futures):
-            pbar.update(1)
-            result = future.result()
-            if result.startswith("ERROR"):
-                error_count += 1
+        error_count = 0
+        with tqdm(total=num_todo) as pbar:
+            for future in as_completed(futures):
+                pbar.update(1)
+                result = future.result()
+                if result.startswith("ERROR"):
+                    error_count += 1
 
     print(f"Number of errors: {error_count}")
     print(f"Number of successful runs: {num_todo - error_count}")
@@ -243,15 +242,16 @@ def run_parallel(
 
 def main():
     identifier = os.getenv("SLURM_JOB_ID", "")
-    simulation_dir = Path.cwd() / "simulation_runs" / identifier
-    num_workers = os.getenv("SLURM_CPUS_PER_TASK", 2)
+    simulation_dir = Path.cwd() / "simulation_runs" / "test" / identifier
+    num_workers = int(os.getenv("SLURM_CPUS_PER_TASK", 1))
+    num_todo = 10_000
 
     start = datetime.now()
     print(f"Simulation started at: {start}")
     run_parallel(
         simulation_dir,
         num_workers=num_workers,
-        num_todo=NUM_TODO,
+        num_todo=num_todo,
         randomized=True,
     )
     end = datetime.now()
