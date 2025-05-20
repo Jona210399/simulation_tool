@@ -133,7 +133,6 @@ class Generation:
             "a": self.a,
             "k_f": self.k_f,
             "k_direct": self.k_direct,
-            "preLangevin": self.preLangevin,
         }
 
 
