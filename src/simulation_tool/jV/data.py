@@ -41,15 +41,19 @@ class JVData:
 
         if jv_file.suffix == ".parquet":
             jv_data = pl.read_parquet(source=jv_file)
+            vext = jv_data["Vext"].to_numpy()
+            jext = jv_data["Jext"].to_numpy()
         else:
-            jv_data = pl.read_csv(jv_file, separator=" ", truncate_ragged_lines=True)
+            jv_data = np.loadtxt(jv_file, skiprows=1, usecols=(0, 1))
+            vext = jv_data[:, 0]
+            jext = jv_data[:, 1]
 
         return cls(
-            jv_data["Vext"].to_numpy(),
-            jv_data["Jext"].to_numpy(),
-            voc,
-            jsc,
-            ff,
+            Vext=vext,
+            Jext=jext,
+            voc=voc,
+            jsc=jsc,
+            ff=ff,
         )
 
     def to_parquet(
