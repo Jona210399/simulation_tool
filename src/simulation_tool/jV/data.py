@@ -56,15 +56,22 @@ class JVData:
             ff=ff,
         )
 
+    def to_saveable_dict(self) -> dict[str, Array1D]:
+        dict_ = asdict(self)
+        keys_to_pop = ["voc, jsc", "ff"]
+        for key in keys_to_pop:
+            dict_.pop(key)
+        return dict_
+
     def to_parquet(
         self,
         save_dir: Path,
         dtype: pl.DataType = pl.Float32,
     ):
         save_location = (save_dir / JV_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet")
-        pl.DataFrame(asdict(self)).with_columns([pl.all().cast(dtype)]).write_parquet(
-            file=save_location
-        )
+        pl.DataFrame(self.to_saveable_dict()).with_columns(
+            [pl.all().cast(dtype)]
+        ).write_parquet(file=save_location)
 
     def calculate_pce(self, pin: float = 1000.0) -> float:
         """
