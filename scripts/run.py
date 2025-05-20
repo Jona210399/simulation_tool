@@ -242,7 +242,7 @@ def run_parallel(
 
 def main():
     identifier = os.getenv("SLURM_JOB_ID", "")
-    simulation_dir = Path.cwd() / "simulation_runs" / "test" / identifier
+    simulation_dir = Path.cwd() / "simulation_runs" / identifier
     num_workers = int(os.getenv("SLURM_CPUS_PER_TASK", 1))
     num_todo = 10_000
 
