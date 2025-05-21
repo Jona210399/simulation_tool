@@ -51,5 +51,8 @@ EQE_SIM_OUTPUT_FILE_NAME = "EQE"
 JV_SIM_OUTPUT_FILE_NAME = "jV"
 """Name of the generated jV file. This is used to store the jV data. A file ending will be added automatically."""
 
+PARAMS_OUTPUT_FILE_NAME = "params"
+"""Name of the generated params file. This is used to store the parameters of the simulation. A file ending will be added automatically."""
+
 ADDITIONAL_FILES_DIR = Path(__file__).parent / "additional_files"
 """Directory for the additional files. This is used to store the additional files that are needed for the simulation. For example nk.txt and spectrum.txt files"""

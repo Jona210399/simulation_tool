@@ -1,6 +1,7 @@
+import os
 import shutil
 from collections import defaultdict
-from datetime import datetime
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
@@ -13,6 +14,7 @@ from simulation_tool.constants import (
     EQE_SIM_OUTPUT_FILE_NAME,
     JV_SIM_OUTPUT_FILE_NAME,
     NK_FILE_NAME,
+    PARAMS_OUTPUT_FILE_NAME,
     RUN_DIR_PREFIX,
     SET_UP_FILE,
     UVVIS_FILE_NAME,
@@ -183,14 +185,7 @@ def plot_uvvis(
 
 def save_jV_data(
     jVs: list[JVData], save_dir: Path
-) -> tuple[
-    NDArray,
-    NDArray,
-    NDArray,
-    NDArray,
-    NDArray,
-    NDArray,
-]:
+) -> tuple[pl.DataFrame, tuple[NDArray, NDArray, NDArray, NDArray, NDArray]]:
     v = np.stack([jv.Vext for jv in jVs])
     j = np.stack([jv.Jext for jv in jVs])
     ff = np.array([jv.ff for jv in jVs])
@@ -212,16 +207,12 @@ def save_jV_data(
 
     df.write_parquet(file=(save_dir / JV_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet"))
 
-    return v, j, ff, voc, jsc, pce
+    return df, (v, j, ff, voc, jsc, pce)
 
 
 def save_uvvis_data(
     uvvis: list[UVVisData], save_dir: Path
-) -> tuple[
-    NDArray,
-    NDArray,
-    NDArray,
-]:
+) -> tuple[pl.DataFrame, tuple[NDArray, NDArray, NDArray]]:
     wavelenghts = np.stack([uvv.wavelengths for uvv in uvvis])
     a = np.stack([uvv.absorption for uvv in uvvis])
     r = np.stack([uvv.reflection for uvv in uvvis])
@@ -237,16 +228,12 @@ def save_uvvis_data(
 
     df.write_parquet(file=(save_dir / UVVIS_FILE_NAME).with_suffix(".parquet"))
 
-    return a, r, wavelenghts
+    return df, (a, r, wavelenghts)
 
 
 def save_optical_data(
     optical: list[OpticalData], save_dir: Path
-) -> tuple[
-    NDArray,
-    NDArray,
-    NDArray,
-]:
+) -> tuple[pl.DataFrame, tuple[NDArray, NDArray, NDArray]]:
     n = np.stack([opt.n for opt in optical])
     k = np.stack([opt.k for opt in optical])
     wavelenghts = np.stack([opt.wavelenghts for opt in optical])
@@ -262,10 +249,12 @@ def save_optical_data(
 
     df.write_parquet(file=(save_dir / NK_FILE_NAME).with_suffix(".parquet"))
 
-    return n, k, wavelenghts
+    return df, (n, k, wavelenghts)
 
 
-def save_eqe_data(eqes: list[EQEData], save_dir: Path) -> tuple[NDArray, NDArray]:
+def save_eqe_data(
+    eqes: list[EQEData], save_dir: Path
+) -> tuple[pl.DataFrame, tuple[NDArray, NDArray]]:
     eqe = np.stack([eqe.EQE for eqe in eqes])
     wavelenghts = np.stack([eqe.wavelenghts for eqe in eqes])
     df = pl.concat(
@@ -277,17 +266,18 @@ def save_eqe_data(eqes: list[EQEData], save_dir: Path) -> tuple[NDArray, NDArray
     )
     df.write_parquet(file=(save_dir / EQE_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet"))
 
-    return eqe, wavelenghts
+    return df, (eqe, wavelenghts)
 
 
 def save_parameters(parameters: list[dict], save_dir: Path) -> pl.DataFrame:
     data = np.stack([np.array(list(params.values())) for params in parameters])
     columns = list(parameters[0].keys())
+    schema = {col: pl.Float32 for col in columns}
     df = pl.DataFrame(
         data=data,
-        schema=columns,
+        schema=schema,
     )
-    df.write_parquet(file=save_dir / "params.parquet")
+    df.write_parquet(file=(save_dir / PARAMS_OUTPUT_FILE_NAME).with_suffix(".parquet"))
     return df
 
 
@@ -321,11 +311,15 @@ def find_devices_with_best_pce(
     return run_ids
 
 
-def post_process_simulations(simulation_dir: Path):
+def post_process_simulations(
+    simulation_dir: Path,
+) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame, pl.DataFrame, pl.DataFrame]:
     MAX_CURVES_TO_PLOT: int | None = 50
     TOP_K: int = 5
     DPI: int = 300
     SAVE_DIR = simulation_dir / "post_processed"
+    if SAVE_DIR.exists():
+        shutil.rmtree(SAVE_DIR)
     data_dir = SAVE_DIR / "data"
     plot_dir = SAVE_DIR / "plots"
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -349,10 +343,12 @@ def post_process_simulations(simulation_dir: Path):
         optical.append(optical_data)
         parameters.append(params)
 
-    v, j, ff, voc, jsc, pces = save_jV_data(jVs, data_dir)
-    absorption, reflection, wavelenghts_abs = save_uvvis_data(uvvis, data_dir)
-    n, k, wavelenghts_opt = save_optical_data(optical, data_dir)
-    eqe, wavelenghts_eqe = save_eqe_data(eqes, data_dir)
+    jV_df, (v, j, ff, voc, jsc, pces) = save_jV_data(jVs, data_dir)
+    uvvis_df, (absorption, reflection, wavelenghts_abs) = save_uvvis_data(
+        uvvis, data_dir
+    )
+    eqes_df, (eqe, wavelenghts_eqe) = save_eqe_data(eqes, data_dir)
+    optical_df, (n, k, wavelenghts_opt) = save_optical_data(optical, data_dir)
     parameters = save_parameters(parameters, data_dir)
 
     plot_device_characteristics_distributions(
@@ -394,15 +390,81 @@ def post_process_simulations(simulation_dir: Path):
         jvs=jVs,
     )
 
+    return jV_df, uvvis_df, eqes_df, optical_df, parameters
+
+
+def read_post_processed_data(
+    dir: Path,
+) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame, pl.DataFrame, pl.DataFrame]:
+    jVs = pl.read_parquet((dir / JV_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet"))
+    uvvis = pl.read_parquet((dir / UVVIS_FILE_NAME).with_suffix(".parquet"))
+    eqes = pl.read_parquet((dir / EQE_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet"))
+    optical = pl.read_parquet((dir / NK_FILE_NAME).with_suffix(".parquet"))
+    parameters = pl.read_parquet(
+        (dir / PARAMS_OUTPUT_FILE_NAME).with_suffix(".parquet")
+    )
+
+    return jVs, uvvis, eqes, optical, parameters
+
 
 def main():
-    simulation_dir = Path.cwd() / "simulation_runs" / "697861"
-    start = datetime.now()
-    print(f"Start Post Processing directory {simulation_dir} at: {start}")
-    post_process_simulations(simulation_dir)
-    end = datetime.now()
-    print(f"Ended postprocessing at. {end}")
-    print(f"Total time: {end - start}")
+    simulation_dir = Path.cwd() / "simulation_runs"
+    max_workers = int(os.getenv("SLURM_CPUS_PER_TASK", 1))
+
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures = []
+        names = []
+        for dir_ in list(simulation_dir.iterdir()):
+            if not dir_.is_dir():
+                continue
+
+            if (already_processed := dir_ / "post_processed").exists():
+                print(f"Skipping {dir_} as it has already been post-processed.")
+                futures.append(
+                    executor.submit(read_post_processed_data, already_processed)
+                )
+
+            print(f"Found run directory: {dir_}")
+            names.append(dir_.name)
+            futures.append(executor.submit(post_process_simulations, dir_))
+
+        jv_dfs = []
+        uvvis_dfs = []
+        eqe_dfs = []
+        optical_dfs = []
+        parameters_dfs = []
+
+        with tqdm(total=len(futures), desc="Processing directories") as pbar:
+            for future in as_completed(futures):
+                pbar.update(1)
+                jVs, uvvis, eqes, optical, parameters = future.result()
+                jv_dfs.append(jVs)
+                uvvis_dfs.append(uvvis)
+                eqe_dfs.append(eqes)
+                optical_dfs.append(optical)
+                parameters_dfs.append(parameters)
+
+    jv_df: pl.DataFrame = pl.concat(jv_dfs)
+    uvvis_df: pl.DataFrame = pl.concat(uvvis_dfs)
+    eqe_df: pl.DataFrame = pl.concat(eqe_dfs)
+    optical_df: pl.DataFrame = pl.concat(optical_dfs)
+    parameters_df: pl.DataFrame = pl.concat(parameters_dfs)
+
+    output_dir = simulation_dir / "post_processed"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    with open(output_dir / "jobs.txt", "w") as f:
+        f.write("\n".join(names))
+
+    jv_df.write_parquet((output_dir / JV_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet"))
+    uvvis_df.write_parquet((output_dir / UVVIS_FILE_NAME).with_suffix(".parquet"))
+    eqe_df.write_parquet(
+        (output_dir / EQE_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet")
+    )
+    optical_df.write_parquet((output_dir / NK_FILE_NAME).with_suffix(".parquet"))
+    parameters_df.write_parquet(
+        (output_dir / PARAMS_OUTPUT_FILE_NAME).with_suffix(".parquet")
+    )
+    print(f"Post-processing completed. Data saved to {output_dir}")
 
 
 if __name__ == "__main__":
