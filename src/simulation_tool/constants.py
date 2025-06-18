@@ -56,3 +56,8 @@ PARAMS_OUTPUT_FILE_NAME = "params"
 
 ADDITIONAL_FILES_DIR = Path(__file__).parent / "additional_files"
 """Directory for the additional files. This is used to store the additional files that are needed for the simulation. For example nk.txt and spectrum.txt files"""
+
+LINE_WIDTH: float = 1.0
+"""Width of the lines in the postprocessing plots."""
+LINE_ALPHA: float = 0.5
+"""Alpha value for the lines in the postprocessing plots."""
