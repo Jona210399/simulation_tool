@@ -110,8 +110,15 @@ def save_eqe_data(
     return df, combined
 
 
+def combine_parameters(parameters: list[dict]) -> dict[str, Array1D]:
+    combined = {}
+    for key in parameters[0].keys():
+        combined[key] = np.array([params[key] for params in parameters])
+    return combined
+
+
 def save_parameters(parameters: list[dict], save_dir: Path) -> pl.DataFrame:
-    data = np.stack([np.array(list(params.values())) for params in parameters])
+    data = combine_parameters(parameters)
     columns = list(parameters[0].keys())
     schema = {col: pl.Float32 for col in columns}
     df = pl.DataFrame(
