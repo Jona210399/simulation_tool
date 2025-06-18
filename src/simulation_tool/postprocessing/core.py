@@ -1,9 +1,12 @@
 from pathlib import Path
 
+import polars as pl
+
 from simulation_tool.constants import (
     EQE_SIM_OUTPUT_FILE_NAME,
     JV_SIM_OUTPUT_FILE_NAME,
     NK_FILE_NAME,
+    PARAMS_OUTPUT_FILE_NAME,
     SET_UP_FILE,
     UVVIS_FILE_NAME,
 )
@@ -82,3 +85,23 @@ def post_process_session(session_path: Path):
     parameters = _get_relevant_parameters(simss_config, layers)
 
     return jv_data, uvvis_data, eqe_data, optical_data, parameters
+
+
+def read_post_processed_data(
+    dir: Path,
+) -> tuple[
+    pl.DataFrame,
+    pl.DataFrame,
+    pl.DataFrame,
+    pl.DataFrame,
+    pl.DataFrame,
+]:
+    jVs = pl.read_parquet((dir / JV_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet"))
+    uvvis = pl.read_parquet((dir / UVVIS_FILE_NAME).with_suffix(".parquet"))
+    eqes = pl.read_parquet((dir / EQE_SIM_OUTPUT_FILE_NAME).with_suffix(".parquet"))
+    optical = pl.read_parquet((dir / NK_FILE_NAME).with_suffix(".parquet"))
+    parameters = pl.read_parquet(
+        (dir / PARAMS_OUTPUT_FILE_NAME).with_suffix(".parquet")
+    )
+
+    return jVs, uvvis, eqes, optical, parameters
