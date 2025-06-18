@@ -52,13 +52,15 @@ def plot_jVs(
     jVs: list[JVData],
     save_path: Path,
     dpi: int,
+    label: bool = False,
+    ylim: tuple[float, float] | None = (-200, 200),
 ):
     _, ax = plt.subplots(figsize=(8, 6))
 
     for jV in jVs:
-        jV.plot(ax=ax, linewidth=LINE_WIDTH, alpha=LINE_ALPHA, label=False)
+        jV.plot(ax=ax, linewidth=LINE_WIDTH, alpha=LINE_ALPHA, label=label)
 
-    plt.ylim(-200, 200)
+    plt.ylim(*ylim) if ylim else None
     plt.savefig(save_path, dpi=dpi)
     plt.close()
 
