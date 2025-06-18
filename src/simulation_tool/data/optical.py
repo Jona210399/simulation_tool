@@ -15,7 +15,7 @@ from simulation_tool.constants import (
     NM_TO_M,
     USE_KK_CONSISTENT_GENERATION,
 )
-from simulation_tool.typing_ import Array1D
+from simulation_tool.typing_ import Array1D, Array2D
 from simulation_tool.utils import (
     convolute_gaussians,
     get_num_points_for_linspace,
@@ -92,6 +92,13 @@ class OpticalData:
         dict_ = self.to_plotable_dict()
         # preserves key order
         return {"lambda": dict_.pop("wavelenghts"), **dict_}
+
+    @staticmethod
+    def combine(optical: list["OpticalData"]) -> tuple[Array2D, Array2D, Array2D]:
+        n = np.stack([opt.n for opt in optical])
+        k = np.stack([opt.k for opt in optical])
+        wavelenghts = np.stack([opt.wavelenghts for opt in optical])
+        return n, k, wavelenghts
 
 
 def plot_optical_data(

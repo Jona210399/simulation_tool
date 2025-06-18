@@ -6,7 +6,7 @@ import polars as pl
 from matplotlib.axes import Axes
 
 from simulation_tool.constants import JV_SIM_OUTPUT_FILE_NAME
-from simulation_tool.typing_ import Array1D
+from simulation_tool.typing_ import Array1D, Array2D
 
 
 @dataclass
@@ -99,6 +99,19 @@ class JVData:
             label=label,
             alpha=alpha,
         )
+
+    @staticmethod
+    def combine(
+        jVs: list["JVData"],
+    ) -> tuple[Array2D, Array2D, Array1D, Array1D, Array1D, Array1D]:
+        v = np.stack([jv.Vext for jv in jVs])
+        j = np.stack([jv.Jext for jv in jVs])
+        ff = np.array([jv.ff for jv in jVs])
+        voc = np.array([jv.voc for jv in jVs])
+        jsc = np.array([jv.jsc for jv in jVs])
+        pce = np.array([jv.calculate_pce() for jv in jVs])
+
+        return v, j, ff, voc, jsc, pce
 
 
 def plot_jV(

@@ -1,11 +1,12 @@
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+import numpy as np
 import polars as pl
 from matplotlib.axes import Axes
 
 from simulation_tool.constants import M_TO_NM
-from simulation_tool.typing_ import Array1D
+from simulation_tool.typing_ import Array1D, Array2D
 
 
 @dataclass
@@ -59,6 +60,13 @@ class EQEData:
             linewidth=linewidth,
             alpha=alpha,
         )
+
+    @staticmethod
+    def combine(eqes: list["EQEData"]) -> tuple[Array2D, Array2D]:
+        eqe = np.stack([eqe.EQE for eqe in eqes])
+        wavelenghts = np.stack([eqe.wavelenghts for eqe in eqes])
+
+        return eqe, wavelenghts
 
 
 def plot_EQE(

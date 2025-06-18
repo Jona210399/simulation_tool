@@ -6,7 +6,7 @@ import polars as pl
 from matplotlib.axes import Axes
 
 from simulation_tool.constants import M_TO_NM, UVVIS_FILE_NAME
-from simulation_tool.typing_ import Array1D
+from simulation_tool.typing_ import Array1D, Array2D
 
 
 @dataclass
@@ -111,6 +111,15 @@ class UVVisData:
             linewidth=linewidth,
             alpha=alpha,
         )
+
+    @staticmethod
+    def combine(uvvis: list["UVVisData"]) -> tuple[Array2D, Array2D, Array2D, Array2D]:
+        a = np.stack([uvv.absorption for uvv in uvvis])
+        r = np.stack([uvv.reflection for uvv in uvvis])
+        t = np.stack([uvv.transmission for uvv in uvvis])
+        wavelenghts = np.stack([uvv.wavelengths for uvv in uvvis])
+
+        return a, r, t, wavelenghts
 
 
 def plot_uvvis(
