@@ -99,7 +99,7 @@ def _common_randomization(
     layer.N_A = loguniform(*N_D_A_RANGE)
 
     layer.mobilities.mu_n = 10.0 ** (
-        -randn() * 2 - mobility_exponent_offset + layer_factor * 2.0
+        -randn() * 2.0 - mobility_exponent_offset + layer_factor * 2.0
     )
     layer.mobilities.mu_p = 10.0 ** (
         -randn() * 2.0 - mobility_exponent_offset + layer_factor * 2.0
@@ -191,6 +191,7 @@ def _randomize_simss_config(
     simss_config.contacts.W_R = w_r
     # simss_config.contacts.R_shunt = loguniform(*R_SHUNT_RANGE)
     # simss_config.contacts.R_series = loguniform(*R_SERIES_RANGE)
+    """Randomization of the Resistances lead to significantly lower simulation convergence rates."""
 
     simss_config.optics.L_TCO = loguniform(*L_TCO_RANGE)
     simss_config.optics.L_BE = loguniform(*L_BE_RANGE)
