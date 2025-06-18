@@ -92,6 +92,7 @@ def _common_randomization(
 ) -> Layer:
     layer.L = loguniform(*l_range)
     layer_factor = _calculate_layer_factor(l_range, layer.L)
+    """Without the layer_factor, the convergence rate slightly dropped."""
     layer.eps_r = randn() + EPS_R_OFFSET
 
     layer.N_c = loguniform(*N_C_RANGE)
