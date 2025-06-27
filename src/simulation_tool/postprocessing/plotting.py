@@ -1,9 +1,12 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.lines import Line2D
 
-from simulation_tool.constants import LINE_ALPHA, LINE_WIDTH
+from simulation_tool.constants import LINE_ALPHA, LINE_WIDTH, M_TO_NM
 from simulation_tool.data import UVVisData
+from simulation_tool.data.optical import OpticalData
 from simulation_tool.EQE.data import EQEData
 from simulation_tool.jV.data import JVData
 from simulation_tool.typing_ import Array1D
@@ -93,4 +96,44 @@ def plot_uvvis(
         uvv.plot_reflection(ax=ax, linewidth=LINE_WIDTH, alpha=LINE_ALPHA)
 
     plt.savefig(save_dir / "reflection.png", dpi=dpi)
+    plt.close()
+
+
+def plot_optical_data(
+    opticals: list[OpticalData],
+    save_path: Path,
+    dpi: int = 300,
+):
+    _, ax = plt.subplots(figsize=(8, 6))
+    ax: Axes = ax
+
+    for optical in opticals:
+        n = ax.plot(
+            optical.wavelenghts * M_TO_NM,
+            optical.n,
+            linewidth=LINE_WIDTH,
+            alpha=LINE_ALPHA,
+            linestyle="-",
+        )
+        color = n[0].get_color()
+
+        ax.plot(
+            optical.wavelenghts * M_TO_NM,
+            optical.k,
+            linewidth=LINE_WIDTH,
+            alpha=LINE_ALPHA,
+            color=color,
+            linestyle="--",
+        )
+
+        ax.set_xlabel("wavelenght [nm]")
+        ax.set_ylabel("n/k [a.u.]")
+
+    legend_elements = [
+        Line2D([0], [0], color="black", lw=LINE_WIDTH, linestyle="-", label="n"),
+        Line2D([0], [0], color="black", lw=LINE_WIDTH, linestyle="--", label="k"),
+    ]
+    ax.legend(handles=legend_elements)
+
+    plt.savefig(save_path, dpi=dpi)
     plt.close()
