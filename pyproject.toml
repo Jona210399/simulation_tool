@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.13"
 dependencies = [
     "dataclass-wizard>=0.35.0",
+    "huggingface-hub[cli]>=0.34.4",
     "matplotlib>=3.10.3",
     "numpy>=2.0.0",
     "polars>=1.27.1",
