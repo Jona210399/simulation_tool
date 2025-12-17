@@ -18,10 +18,15 @@ def record(
     variable_name: str,
     method: str,
     args: tuple,
+    kwargs: dict,
 ):
+    if variable_name in RANDOMIZATION_LOG:
+        return
+
     RANDOMIZATION_LOG[variable_name] = {
         "method": method,
         "args": args,
+        "kwargs": kwargs,
     }
 
 
@@ -30,19 +35,26 @@ def reset():
 
 
 def export_json(path: Path):
-    if path.exists():
-        return
-
     with open(path, "w") as f:
         json.dump(RANDOMIZATION_LOG, f, indent=2)
 
 
-def tracked(method_name: str):
+def tracked(method_name: str, preserve_first_arg: bool = False) -> Callable:
     def decorator(func: Callable):
+        if preserve_first_arg:
+
+            @wraps(func)
+            def wrapper(self, variable_name: str, *args, **kwargs):
+                value = func(self, *args, **kwargs)
+                record(variable_name, method_name, args, kwargs)
+                return value
+
+            return wrapper
+
         @wraps(func)
         def wrapper(variable_name: str, *args, **kwargs):
             value = func(*args, **kwargs)
-            record(variable_name, method_name, args)
+            record(variable_name, method_name, args, kwargs)
             return value
 
         return wrapper

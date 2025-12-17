@@ -1,9 +1,11 @@
 import os
+import uuid
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
+from numpy.random import SeedSequence
 from tqdm import tqdm
 
 import simulation_tool.templates.to_text as to_text
@@ -31,6 +33,7 @@ from simulation_tool.randomization.kf_adapted import (
 from simulation_tool.randomization.original import (
     randomize_device as randomize_device_original,
 )
+from simulation_tool.randomization.rng_funcs import RNGFunctions
 from simulation_tool.randomization.tracked import export_json
 from simulation_tool.session import clean_session, delete_session, set_up_session
 from simulation_tool.templates.layer import Layer
@@ -80,7 +83,7 @@ def write_simulation_input_files(
 
 def prepare_simulation(
     session_path: Path,
-    randomized: bool,
+    randomizer: RNGFunctions | None = None,
 ) -> SimssConfig:
     simss_config = SimssConfig.from_session(session_path=session_path)
 
@@ -98,9 +101,12 @@ def prepare_simulation(
         bandgap=optical_data.bandgap,
     )
 
-    if randomized:
+    if randomizer is not None:
         layers, simss_config = randomize_device(
-            *layers, simss_config=simss_config, bandgap=optical_data.bandgap
+            *layers,
+            simss_config=simss_config,
+            bandgap=optical_data.bandgap,
+            randomizer=randomizer,
         )
 
     write_simulation_input_files(simss_config, layers)
@@ -166,10 +172,9 @@ def run_simulations(
 def run(
     simulation_dir: Path,
     process_id: int,
-    randomized: bool,
-    random_seed: int,
+    random_seed: int | SeedSequence,
 ) -> str:
-    np.random.seed(random_seed)
+    randomizer = RNGFunctions(random_seed)
     session_path = simulation_dir / f"{RUN_DIR_PREFIX}_{process_id}"
     set_up_session(
         path_to_executable=PATH_TO_SIMSS_EXECUTABLE,
@@ -178,7 +183,7 @@ def run(
 
     smiss_config = prepare_simulation(
         session_path=session_path,
-        randomized=randomized,
+        randomizer=randomizer,
     )
 
     eqe_parameters = EQEParameters(
@@ -201,8 +206,7 @@ def run(
         simss_config=smiss_config,
     )
 
-    if randomized:
-        export_json(simulation_dir / "randomization_log.json")
+    export_json(simulation_dir / "randomization_log.json")
 
     return result
 
@@ -211,12 +215,13 @@ def run_parallel(
     simulation_dir: Path,
     num_workers: int = 4,
     num_todo: int = 4,
-    randomized: bool = False,
 ):
     print(f"Number of simulations to run: {num_todo}")
     print(f"Number of workers: {num_workers}")
 
-    random_seed = int(os.getenv("SLURM_JOB_ID", 0))
+    random_seed = int(os.getenv("SLURM_JOB_ID", int(uuid.uuid4()) % 2**32))
+    worker_seeds = np.random.SeedSequence(random_seed).spawn(num_todo)
+    print(f"Using Job ID / random seed {random_seed} to get {num_todo} worker seeds.")
 
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         futures = [
@@ -224,8 +229,7 @@ def run_parallel(
                 run,
                 simulation_dir,
                 process_id,
-                randomized,
-                random_seed + process_id,
+                worker_seeds[process_id],
             )
             for process_id in range(num_todo)
         ]
@@ -256,7 +260,6 @@ def main():
         simulation_dir,
         num_workers=num_workers,
         num_todo=num_todo,
-        randomized=True,
     )
     end = datetime.now()
     print(f"Simulation ended at: {end}")
@@ -269,8 +272,7 @@ def test_run():
     run(
         simulation_dir,
         process_id=0,
-        randomized=True,
-        random_seed=42,
+        random_seed=10,
     )
 
 
