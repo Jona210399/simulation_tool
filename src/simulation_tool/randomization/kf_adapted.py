@@ -1,8 +1,15 @@
 import numpy as np
 
+from simulation_tool.randomization.tracked import tracked
 from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig
 from simulation_tool.utils import loguniform, randint, randn, uniform
+
+
+loguniform = tracked("loguniform")(loguniform)
+uniform = tracked("uniform")(uniform)
+randn = tracked("randn")(randn)
+randint = tracked("randint")(randint)
 
 OPV = False
 ENERGY_LEVEL_OFFSET = 0.1  # eV
@@ -68,6 +75,7 @@ def randomize_device(
     )
 
     layer2.interface.E_t_int = uniform(
+        "l2.E_t_int",
         layer2.E_c + INTERFACE_E_T_INT_OFFSET,
         layer3.E_v - INTERFACE_E_T_INT_OFFSET,
     )
@@ -87,33 +95,41 @@ def _calculate_layer_factor(l_range: tuple[float, float], layer_L: float) -> flo
 
 def _common_randomization(
     layer: Layer,
+    layer_prefix: str,
     l_range: tuple[float, float],
     mobility_exponent_offset: float,
 ) -> Layer:
-    layer.L = loguniform(*l_range)
+    layer.L = loguniform(f"{layer_prefix}.L", *l_range)
     layer_factor = _calculate_layer_factor(l_range, layer.L)
     """Without the layer_factor, the convergence rate slightly dropped."""
-    layer.eps_r = randn() + EPS_R_OFFSET
+    layer.eps_r = randn(f"{layer_prefix}.eps_r") + EPS_R_OFFSET
 
-    layer.N_c = loguniform(*N_C_RANGE)
-    layer.N_D = loguniform(*N_D_A_RANGE)
-    layer.N_A = loguniform(*N_D_A_RANGE)
+    layer.N_c = loguniform(f"{layer_prefix}.N_c", *N_C_RANGE)
+    layer.N_D = loguniform(f"{layer_prefix}.N_D", *N_D_A_RANGE)
+    layer.N_A = loguniform(f"{layer_prefix}.N_A", *N_D_A_RANGE)
 
     layer.mobilities.mu_n = 10.0 ** (
-        -randn() * 2.0 - mobility_exponent_offset + layer_factor * 2.0
+        -randn(f"{layer_prefix}.mu_n") * 2.0
+        - mobility_exponent_offset
+        + layer_factor * 2.0
     )
     layer.mobilities.mu_p = 10.0 ** (
-        -randn() * 2.0 - mobility_exponent_offset + layer_factor * 2.0
+        -randn(f"{layer_prefix}.mu_p") * 2.0
+        - mobility_exponent_offset
+        + layer_factor * 2.0
     )
-    layer.interface.N_t_int = loguniform(*INTERFACE_N_INT_RANGE)
+    layer.interface.N_t_int = loguniform(
+        f"{layer_prefix}.N_t_int", *INTERFACE_N_INT_RANGE
+    )
     layer.interface.C_n_int = INTERFACE_C_N_P
     layer.interface.C_p_int = INTERFACE_C_N_P
-    layer.interface.intTrapType = randint(-1, 2)
+    layer.interface.intTrapType = randint(f"{layer_prefix}.intTrapType", -1, 2)
 
-    layer.bulk.N_t_bulk = loguniform(*BULK_N_T_RANGE)
-    layer.bulk.C_n_bulk = loguniform(*BULK_C_N_RANGE)
-    layer.bulk.C_p_bulk = loguniform(*BULK_C_P_RANGE)
+    layer.bulk.N_t_bulk = loguniform(f"{layer_prefix}.N_t_bulk", *BULK_N_T_RANGE)
+    layer.bulk.C_n_bulk = loguniform(f"{layer_prefix}.C_n_bulk", *BULK_C_N_RANGE)
+    layer.bulk.C_p_bulk = loguniform(f"{layer_prefix}.C_p_bulk", *BULK_C_P_RANGE)
     layer.bulk.E_t_bulk = uniform(
+        f"{layer_prefix}.E_t_bulk",
         layer.E_c + BULK_E_T_OFFSET,
         layer.E_v - BULK_E_T_OFFSET,
     )
@@ -125,15 +141,19 @@ def _randomize_layer1(
     layer2_E_c: float,
     layer2_E_v: float,
 ) -> Layer:
-    layer.E_c = randn() * 0.1 + layer2_E_c + ENERGY_LEVEL_OFFSET
-    layer.E_v = randn() * 0.1 + layer2_E_v + ENERGY_LEVEL_OFFSET
+    layer_prefix = "l1"
+
+    layer.E_c = randn(f"{layer_prefix}.E_c") * 0.1 + layer2_E_c + ENERGY_LEVEL_OFFSET
+    layer.E_v = randn(f"{layer_prefix}.E_v") * 0.1 + layer2_E_v + ENERGY_LEVEL_OFFSET
     layer.interface.E_t_int = uniform(
+        f"{layer_prefix}.E_t_int",
         layer.E_c + INTERFACE_E_T_INT_OFFSET,
         layer2_E_v - INTERFACE_E_T_INT_OFFSET,
     )
 
     layer = _common_randomization(
         layer=layer,
+        layer_prefix=layer_prefix,
         l_range=L_RANGE,
         mobility_exponent_offset=MOBILITY_EXPONENT_OFFSET,
     )
@@ -145,14 +165,18 @@ def _randomize_layer2(
     layer: Layer,
     bandgap: float,
 ):
-    layer.E_c = randn() * 0.5 + L2_E_C_OFFSET
+    layer_prefix = "l2"
+    layer.E_c = randn(f"{layer_prefix}.E_c") * 0.5 + L2_E_C_OFFSET
     layer.E_v = layer.E_c + bandgap
     layer.mobilities.gamma_n = 0.0
-    layer.generation.k_f = loguniform(*L2_KF_RANGE)
-    layer.generation.k_direct = loguniform(*L2_K_DIRECT_RANGE)
+    layer.generation.k_f = loguniform(f"{layer_prefix}.k_f", *L2_KF_RANGE)
+    layer.generation.k_direct = loguniform(
+        f"{layer_prefix}.k_direct", *L2_K_DIRECT_RANGE
+    )
 
     layer = _common_randomization(
         layer=layer,
+        layer_prefix=layer_prefix,
         l_range=L2_L_RANGE,
         mobility_exponent_offset=L2_MOBILITY_EXPONENT_OFFSET,
     )
@@ -165,11 +189,13 @@ def _randomize_layer3(
     layer2_E_c: float,
     layer2_E_v: float,
 ):
-    layer.E_c = randn() * 0.1 + layer2_E_c - ENERGY_LEVEL_OFFSET
-    layer.E_v = randn() * 0.1 + layer2_E_v - ENERGY_LEVEL_OFFSET
+    layer_prefix = "l3"
+    layer.E_c = randn(f"{layer_prefix}.E_c") * 0.1 + layer2_E_c - ENERGY_LEVEL_OFFSET
+    layer.E_v = randn(f"{layer_prefix}.E_v") * 0.1 + layer2_E_v - ENERGY_LEVEL_OFFSET
 
     layer = _common_randomization(
         layer=layer,
+        layer_prefix=layer_prefix,
         l_range=L_RANGE,
         mobility_exponent_offset=MOBILITY_EXPONENT_OFFSET,
     )
@@ -183,19 +209,19 @@ def _randomize_simss_config(
     layer1_E_c: float,
     layer3_E_v: float,
 ) -> SimssConfig:
-    w_l = randn() * 0.5 + layer1_E_c
+    w_l = randn("W_L") * 0.5 + layer1_E_c
     w_l = w_l if w_l > layer1_E_c else layer1_E_c
-    w_r = randn() * 0.5 + layer3_E_v
+    w_r = randn("W_R") * 0.5 + layer3_E_v
     w_r = w_r if w_r < layer3_E_v else layer3_E_v
 
     simss_config.contacts.W_L = w_l
     simss_config.contacts.W_R = w_r
     # simss_config.contacts.R_shunt = loguniform(*R_SHUNT_RANGE)
     # simss_config.contacts.R_series = loguniform(*R_SERIES_RANGE)
-    """Randomization of the Resistances lead to significantly lower simulation convergence rates."""
+    """Randomization of the Resistances leads to significantly lower simulation convergence rates."""
 
-    simss_config.optics.L_TCO = loguniform(*L_TCO_RANGE)
-    simss_config.optics.L_BE = loguniform(*L_BE_RANGE)
+    simss_config.optics.L_TCO = loguniform("L_TCO", *L_TCO_RANGE)
+    simss_config.optics.L_BE = loguniform("L_BE", *L_BE_RANGE)
 
     simss_config.numerical.maxItSS *= 2.0
 

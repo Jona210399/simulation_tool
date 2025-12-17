@@ -31,6 +31,7 @@ from simulation_tool.randomization.kf_adapted import (
 from simulation_tool.randomization.original import (
     randomize_device as randomize_device_original,
 )
+from simulation_tool.randomization.tracked import export_json
 from simulation_tool.session import clean_session, delete_session, set_up_session
 from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig, UserInterface
@@ -200,6 +201,9 @@ def run(
         simss_config=smiss_config,
     )
 
+    if randomized:
+        export_json(simulation_dir / "randomization_log.json")
+
     return result
 
 
@@ -259,5 +263,17 @@ def main():
     print(f"Total time: {end - start}")
 
 
+def test_run():
+    simulation_dir = Path.cwd() / "simulation_runs" / "test"
+
+    run(
+        simulation_dir,
+        process_id=0,
+        randomized=True,
+        random_seed=42,
+    )
+
+
 if __name__ == "__main__":
     main()
+    # test_run()
