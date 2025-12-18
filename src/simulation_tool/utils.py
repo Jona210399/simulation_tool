@@ -1,3 +1,5 @@
+import shutil
+import zipfile
 from pathlib import Path
 from typing import Protocol, TypeVar
 
@@ -73,3 +75,41 @@ def save_figure(plotable: Plotable, save_path: Path, dpi: int, **kwargs) -> None
     plt.tight_layout()
     plt.savefig(save_path, dpi=dpi)
     plt.close(fig)
+
+
+def zip_folder(path: Path, *, remove_origin: bool = False) -> tuple[Path, str]:
+    """
+    Create a ZIP archive from a folder.
+    The archive is created next to the source folder and named '<folder>.zip'.
+    """
+    if not path.exists():
+        raise ValueError(f"Path does not exist: {path}")
+    if not path.is_dir():
+        raise ValueError(f"Path is not a directory: {path}")
+
+    zip_path = path.with_suffix(".zip")
+
+    shutil.make_archive(
+        base_name=str(zip_path.with_suffix("")),
+        format="zip",
+        root_dir=path.parent,
+        base_dir=path.name,
+    )
+
+    if not zip_path.exists():
+        return zip_path, f"{zip_path.name} archive was not created."
+
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        if not zf.namelist():
+            zip_path.unlink(missing_ok=True)
+            return zip_path, f"Created {zip_path.name} archive is empty."
+
+        bad_file = zf.testzip()
+        if bad_file is not None:
+            zip_path.unlink(missing_ok=True)
+            return zip_path, f"Corrupt file in {zip_path.name} archive: {bad_file}"
+
+    if remove_origin:
+        shutil.rmtree(path)
+
+    return zip_path, f"Successfully created {zip_path.name} archive."

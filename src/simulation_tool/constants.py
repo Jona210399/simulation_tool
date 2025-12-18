@@ -61,3 +61,7 @@ LINE_WIDTH: float = 1.0
 """Width of the lines in the postprocessing plots."""
 LINE_ALPHA: float = 0.5
 """Alpha value for the lines in the postprocessing plots."""
+
+
+ZIP_OUTPUT_ENABLED: bool = True
+"""Enable zipping of the simulation folder after the simulation is done."""

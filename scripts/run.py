@@ -18,6 +18,7 @@ from simulation_tool.constants import (
     PLOTTING_ENABLED,
     RUN_DIR_PREFIX,
     WAVE_LENGTH_STEP,
+    ZIP_OUTPUT_ENABLED,
 )
 from simulation_tool.data import BandDiagramData, OpticalData
 from simulation_tool.EQE import (
@@ -38,7 +39,7 @@ from simulation_tool.randomization.tracked import export_json
 from simulation_tool.session import clean_session, delete_session, set_up_session
 from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig, UserInterface
-from simulation_tool.utils import save_figure
+from simulation_tool.utils import save_figure, zip_folder
 
 randomize_device = (
     randomize_device_original if ORIGINAL_RANDOMIZATION else randomize_device_kf_adapted
@@ -264,6 +265,11 @@ def main():
     end = datetime.now()
     print(f"Simulation ended at: {end}")
     print(f"Total time: {end - start}")
+
+    if ZIP_OUTPUT_ENABLED:
+        print("Creating ZIP archive of simulation results...")
+        _, message = zip_folder(simulation_dir, remove_origin=True)
+        print(message)
 
 
 def test_run():
