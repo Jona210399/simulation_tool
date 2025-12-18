@@ -1,12 +1,13 @@
 import json
 from functools import wraps
 from pathlib import Path
-from typing import Callable, TypedDict
+from typing import Any, Callable, TypedDict
 
 
 class RandomizationEntry(TypedDict):
     method: str
     args: tuple
+    kwargs: dict[str, Any]
 
 
 type VariableEntry = str
@@ -18,7 +19,7 @@ def record(
     variable_name: str,
     method: str,
     args: tuple,
-    kwargs: dict,
+    kwargs: dict[str, Any],
 ):
     if variable_name in RANDOMIZATION_LOG:
         return
