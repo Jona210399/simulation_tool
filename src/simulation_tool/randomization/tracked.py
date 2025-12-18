@@ -39,8 +39,9 @@ def export_json(path: Path):
         json.dump(RANDOMIZATION_LOG, f, indent=2)
 
 
-def tracked(method_name: str, preserve_first_arg: bool = False) -> Callable:
+def tracked(preserve_first_arg: bool = False) -> Callable:
     def decorator(func: Callable):
+        method_name = func.__qualname__
         if preserve_first_arg:
 
             @wraps(func)
