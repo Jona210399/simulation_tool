@@ -31,18 +31,18 @@ class RNGFunctions:
     def __init__(self, seed: int | SeedSequence):
         self.rng = np.random.default_rng(seed)
 
-    @tracked(preserve_first_arg=True)
+    @tracked(is_method=True)
     def loguniform(self, *, low: float = 0.0, high: float = 1.0, size=None):
         return loguniform(rng=self.rng, low=low, high=high, size=size)
 
-    @tracked(preserve_first_arg=True)
+    @tracked(is_method=True)
     def uniform(self, *, low: float = 0.0, high: float = 1.0):
         return uniform(rng=self.rng, low=low, high=high)
 
-    @tracked(preserve_first_arg=True)
+    @tracked(is_method=True)
     def randn(self):
         return randn(rng=self.rng)
 
-    @tracked(preserve_first_arg=True)
+    @tracked(is_method=True)
     def randint(self, *, low: int = 0, high: int = 1):
         return randint(rng=self.rng, low=low, high=high)

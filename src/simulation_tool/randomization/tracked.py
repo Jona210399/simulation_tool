@@ -1,7 +1,12 @@
 import json
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, TypedDict
+from typing import Any, Callable, NewType, ParamSpec, TypedDict, TypeVar
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
+VariableName = NewType("VariableName", str)
 
 
 class RandomizationEntry(TypedDict):
@@ -10,9 +15,7 @@ class RandomizationEntry(TypedDict):
     kwargs: dict[str, Any]
 
 
-type VariableEntry = str
-
-RANDOMIZATION_LOG: dict[VariableEntry, RandomizationEntry] = {}
+RANDOMIZATION_LOG: dict[VariableName, RandomizationEntry] = {}
 
 
 def record(
@@ -40,23 +43,26 @@ def export_json(path: Path):
         json.dump(RANDOMIZATION_LOG, f, indent=2)
 
 
-def tracked(preserve_first_arg: bool = False) -> Callable:
-    def decorator(func: Callable):
-        method_name = func.__qualname__
-        if preserve_first_arg:
+def tracked(*, is_method: bool = False):
+    def decorator(func: Callable[P, R]):
+        name = func.__qualname__
+
+        if is_method:
 
             @wraps(func)
-            def wrapper(self, variable_name: str, *args, **kwargs):
+            def wrapper(
+                self, variable: VariableName, *args: P.args, **kwargs: P.kwargs
+            ) -> R:
                 value = func(self, *args, **kwargs)
-                record(variable_name, method_name, args, kwargs)
+                record(variable, name, args, kwargs)
                 return value
 
             return wrapper
 
         @wraps(func)
-        def wrapper(variable_name: str, *args, **kwargs):
+        def wrapper(variable: VariableName, *args: P.args, **kwargs: P.kwargs) -> R:
             value = func(*args, **kwargs)
-            record(variable_name, method_name, args, kwargs)
+            record(variable, name, args, kwargs)
             return value
 
         return wrapper
