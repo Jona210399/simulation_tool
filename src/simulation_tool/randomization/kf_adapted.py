@@ -1,5 +1,6 @@
 import numpy as np
 
+from simulation_tool.constants import NM_TO_M
 from simulation_tool.randomization.rng_funcs import RangeDict, RNGFunctions
 from simulation_tool.templates.layer import Layer
 from simulation_tool.templates.simss import SimssConfig
@@ -89,6 +90,21 @@ def randomize_device(
 def _calculate_layer_factor(l_range: RangeDict, layer_L: float) -> float:
     l_low, l_high = l_range["low"], l_range["high"]
     return (np.log(layer_L) - np.log(l_low)) / (np.log(l_high) - np.log(l_low))
+
+
+def _heuristic_lower_limit_for_k_direct(bandgap: float, layer_L: float) -> float:
+    literature_layer_L = 500 * NM_TO_M
+    literature_bandgap = 1.63  # eV
+
+    # k_direct ~ (1/L) * (bandgap)^2
+
+    scaling_factor = (literature_layer_L / layer_L) * (
+        bandgap / literature_bandgap
+    ) ** 2
+
+    literature_k_direct_lower_limit = 3 * 1e-17  # m^3/s
+
+    return literature_k_direct_lower_limit * scaling_factor
 
 
 def _common_randomization(
@@ -186,9 +202,9 @@ def _randomize_layer2(
     layer.E_v = layer.E_c + bandgap
     layer.mobilities.gamma_n = 0.0
     layer.generation.k_f = randomizer.loguniform(f"{layer_prefix}.k_f", **L2_KF_RANGE)
-    layer.generation.k_direct = randomizer.loguniform(
-        f"{layer_prefix}.k_direct", **L2_K_DIRECT_RANGE
-    )
+    # layer.generation.k_direct = randomizer.loguniform(
+    #    f"{layer_prefix}.k_direct", **L2_K_DIRECT_RANGE
+    # )
 
     layer = _common_randomization(
         layer=layer,
@@ -196,6 +212,15 @@ def _randomize_layer2(
         l_range=L2_L_RANGE,
         mobility_exponent_offset=L2_MOBILITY_EXPONENT_OFFSET,
         randomizer=randomizer,
+    )
+
+    k_direct_lower_limit = _heuristic_lower_limit_for_k_direct(
+        bandgap=bandgap, layer_L=layer.L
+    )
+    layer.generation.k_direct = randomizer.loguniform(
+        f"{layer_prefix}.k_direct",
+        low=k_direct_lower_limit,
+        high=L2_K_DIRECT_RANGE["high"],
     )
 
     return layer
